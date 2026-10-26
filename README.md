@@ -1,0 +1,108 @@
+# Stratosphere forecast charts
+
+Automated, self-updating charts of **zonal-mean zonal wind at 60˚N / 10 hPa (1 mb)**
+from every major operational ensemble, against the **ERA5 1991–2020 climatology**.
+
+![hybrid chart](docs/preview_hybrid.png)
+
+*The "Hybrid" tab: physics-based and AI models on one graph.*
+
+![ensembles chart](docs/preview_ensembles.png)
+
+*The "Ensembles" tab: AIFS ENS (50), ECMWF EPS (50) and GEFS (30) members with the
+bold ensemble mean and control on top.*
+
+| tab | what's on it |
+|---|---|
+| **Physics-based** | ECMWF IFS + EPS, NOAA GFS + GEFS |
+| **AI** | ECMWF AIFS Single + AIFS ENS (51 members) |
+| **Hybrid** | every model on one graph — physics and AI together |
+| **Ensembles** | member spaghetti for each ensemble, with mean + control |
+
+Refreshed **four times daily** at 02, 08, 14 and 20 UTC — two hours after each
+six-hourly suite is disseminated (00Z → 08Z, 06Z → 14Z, 12Z → 20Z, 18Z → 02Z).
+
+---
+
+## Quickstart
+
+```bash
+make venv          # virtualenv + deps
+make sync          # fetch the newest cycle, render all four tabs
+make serve         # http://localhost:8000  (JSON API included)
+make site          # static build into site_out/  (for GitHub Pages)
+```
+
+or without make:
+
+```bash
+venv/bin/python scripts/pipeline.py sync --level 10 --lat 60
+venv/bin/python -m uvicorn webapp.app:app --port 8000
+venv/bin/python scripts/build_site.py --out site_out
+```
+
+`make sync-quick` skips the ensemble-member series (means and controls only) —
+roughly 4× faster when you just want the headline chart.
+
+## Deploying
+
+See **[DEPLOY.md](DEPLOY.md)**. GitHub Pages is free for a public repo: push this
+repo, set *Pages → Source: GitHub Actions*, allow the workflow to write to the
+repo, and the scheduled job publishes the site on its own. A ~$4/mo VPS with
+systemd + nginx is the alternative if you would rather serve the FastAPI app.
+
+## How the automation works
+
+```
+every 4 h (02/08/14/20 UTC)
+   └─ resolve the newest published cycle   (ECMWF + NCEP, by direct probing)
+   └─ fetch only the series that are missing
+        └─ raw GRIB2 -> HTTP Range request for the u@10 hPa message only
+           (the published .index files give the byte offsets)
+   └─ reduce to zonal-mean u at 60˚N, plus the NH area-weighted mean
+   └─ render the four tabs from the ERA5 cache (instant, all 37 levels)
+   └─ update data/store/  ->  static site  ->  deploy
+```
+
+The ERA5 climatology is cached locally (`data/era5_cache/`, 1991–2020, daily
+12Z, **all 37 pressure levels**), so the climatology side of any figure is an
+instant lookup and never touches the network again.
+
+## Data sources
+
+| series | source |
+|---|---|
+| ECMWF AIFS ENS (51 members), AIFS Single, IFS control, EPS (50 perturbed) | ECMWF open data, 0.25° |
+| NOAA GFS (deterministic) | NOAA open data, 0.25° |
+| NOAA GEFS (mean, control, 30 perturbed) | NOAA open data, 0.5° |
+| ERA5 1991–2020 climatology | ARCO-ERA5 (Google Cloud), 0.25° |
+
+GFS/GEFS are redistributed under the NOAA Open Data Dissemination program;
+ECMWF data under the ECMWF open-data licence. Attribution is requested by
+NOAA — see [LICENSE](LICENSE).
+
+## Repo layout
+
+```
+scripts/
+  pipeline.py        run store + sync + render  (the entry point)
+  render.py          the four tabs, house style
+  build_site.py      static build for GitHub Pages
+  era5_cache.py      ERA5 climatology cache (build / query / extend)
+  fetch_aifs.py      ECMWF AIFS ENS   (raw GRIB2, range-fetched)
+  fetch_aifs_single.py  ECMWF AIFS Single
+  fetch_eps.py       ECMWF EPS members + IFS control
+  fetch_noaa.py      NOAA GFS / GEFS (mean, control, members)
+  export_era5_slim.py   slim climatology for the repo
+webapp/              FastAPI app (same template as the static site)
+data/store/          figures, series, latest.json  <- what the site serves
+data/era5_cache/     full ERA5 climatology cache (local)
+.github/workflows/   the 4x-daily watcher + Pages deploy
+```
+
+## House style
+
+Bold far-left title, thin blue member spaghetti, light-red ensemble mean and
+dark-red control with circle markers, heavy black ERA5 climatology with gray
+±1σ/±2σ band, a bold 0 m/s reference line, valid dates every 2 days along the
+bottom with `Valid Days` centred, and `@Massachusettswx` bottom right.

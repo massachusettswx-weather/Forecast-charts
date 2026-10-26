@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+"""
+Run store + auto-update pipeline for the forecast site.
+
+    python3 scripts/pipeline.py resolve          # newest published cycle per source
+    python3 scripts/pipeline.py sync --level 10 --lat 60
+    python3 scripts/pipeline.py list             # what is in the store
+
+`sync` is what the watcher runs 4x/day (02, 08, 14, 20 UTC - two hours after
+each 6-hourly suite is disseminated). It resolves the newest cycle, fetches any
+model that is missing for that cycle, renders the four tab figures, and updates
+data/store/latest.json.
+
+Nothing is re-fetched if the series file already exists, so a re-run is cheap.
+"""
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timedelta, timezone
+
+import numpy as np
+import pandas as pd
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+STORE = os.path.join(ROOT, "data", "store")
+FIGDIR = os.path.join(STORE, "figures")
+SELDIR = os.path.join(STORE, "series")
+PY = os.path.join(ROOT, "venv", "bin", "python")
+for d in (STORE, FIGDIR, SELDIR):
+    os.makedirs(d, exist_ok=True)
+
+ECMWF_LIST = "https://data.ecmwf.int/forecasts/"
+S3 = "https://{bucket}.s3.amazonaws.com/?list-type=2&prefix={prefix}&delimiter=/"
+
+# model key -> (tab, label, family)
+MODELS = {
+    "aifs-single": ("ai", "ECMWF AIFS Single", "ecmwf"),
+    "aifs-ens": ("ai", "ECMWF AIFS ENS", "ecmwf"),
+    "ifs": ("physics", "ECMWF IFS", "ecmwf"),
+    "eps": ("physics", "ECMWF EPS", "ecmwf"),
+    "gfs": ("physics", "NOAA GFS", "ncep"),
+    "gefs": ("physics", "NOAA GEFS", "ncep"),
+    "gefs_members": ("ensembles", "NOAA GEFS members", "ncep"),
+}
+TABS = [("physics", "Physics-based"), ("ai", "AI"),
+        ("hybrid", "Hybrid (physics + AI)"), ("ensembles", "Ensembles (members)")]
+
+
+def sh(cmd, env=None):
+    e = dict(os.environ)
+    if env:
+        e.update(env)
+    p = subprocess.run(cmd, env=e, capture_output=True, text=True)
+    return p.returncode, p.stdout, p.stderr
+
+
+def log(*a):
+    print(f"[{datetime.now(timezone.utc):%H:%M:%SZ}]", *a, flush=True)
+
+
+# ------------------------------------------------------------ cycle resolvers
+def _get(url, tries=3):
+    import requests
+    for t in range(tries):
+        try:
+            r = requests.get(url, timeout=(15, 90))
+            if r.status_code == 200:
+                return r.text
+        except Exception:
+            pass
+        time.sleep(2)
+    return ""
+
+
+def resolve_ecmwf():
+    """Newest ECMWF cycle whose AIFS ENS run is fully published (step 360)."""
+    import requests
+    today = datetime.now(timezone.utc)
+    for back in range(0, 5):
+        d = (today - timedelta(days=back)).strftime("%Y%m%d")
+        for c in ("18", "12", "06", "00"):
+            url = (f"{ECMWF_LIST}{d}/{c}z/aifs-ens/0p25/enfo/"
+                   f"{d}{c}0000-360h-enfo-cf.index")
+            try:
+                r = requests.get(url, timeout=(15, 60))
+                if r.status_code == 200 and r.text.startswith("{"):
+                    return d, c
+            except Exception:
+                pass
+    return None, None
+
+
+def _s3_prefixes(bucket, prefix):
+    """Common prefixes under a prefix, following pagination; returns the last
+    page (lexicographically newest) because S3 caps a page at 1000 keys."""
+    import requests
+    token, last = None, []
+    for _ in range(40):
+        u = S3.format(bucket=bucket, prefix=prefix)
+        if token:
+            u += f"&continuation-token={token}"
+        try:
+            r = requests.get(u, timeout=(15, 90))
+        except Exception:
+            return last
+        if r.status_code != 200:
+            return last
+        pre = re.findall(r"<Prefix>([^<]+)</Prefix>", r.text)[1:]
+        if pre:
+            last = pre
+        m = re.search(r"<NextContinuationToken>([^<]+)</NextContinuationToken>", r.text)
+        if not m:
+            break
+        token = m.group(1)
+    return last
+
+
+def resolve_ncep(bucket, name):
+    """Newest NCEP cycle whose 16-day (f384) files are already published."""
+    import requests
+    stem = {"gfs": "atmos/gfs.t{c}z.pgrb2.0p25",
+            "gefs": "atmos/pgrb2ap5/geavg.t{c}z.pgrb2a.0p50"}[name]
+    today = datetime.now(timezone.utc)
+    for back in range(0, 6):
+        d = (today - timedelta(days=back)).strftime("%Y%m%d")
+        for c in ("18", "12", "06", "00"):
+            key = f"{name}.{d}/{c}/{stem.format(c=c)}.f384"
+            try:
+                r = requests.head(f"https://{bucket}.s3.amazonaws.com/{key}", timeout=(15, 60))
+                if r.status_code == 200:
+                    return d, c
+            except Exception:
+                pass
+    return None, None
+
+
+# ------------------------------------------------------------------- fetching
+def series_path(model, cycle, level):
+    return os.path.join(SELDIR, f"{model}_{cycle}_u{level}.npz")
+
+
+LEGACY = {   # model -> (family, existing filename template in data/)
+    "aifs-ens": ("ecmwf", "aifs_{run}_u{lev}.npz"),
+    "aifs-single": ("ecmwf", "aifs_single_{run}_u{lev}.npz"),
+    "eps": ("ecmwf", "eps_{run}_u{lev}.npz"),
+    "ifs": ("ecmwf", "ifs_ctl_{run}_u{lev}.npz"),
+    "gfs": ("ncep", "gfs_ctl_{run}.npz"),
+    "gefs": ("ncep", "gefs_mean_{run}.npz"),
+    "gefs_members": ("ncep", "gefs_members_{run}.npz"),
+}
+
+
+def fetch_model(model, date, cyc, level):
+    """Fetch one model's series for a cycle. Returns the npz path or None."""
+    out = series_path(model, f"{date}{cyc}", level)
+    if os.path.exists(out):
+        log(f"  {model}: cached")
+        return out
+    run = f"{date}{cyc}"
+    fam, tmpl = LEGACY[model]
+    famrun = f"{date}{cyc}00" if fam == "ecmwf" else f"{date}{cyc}"
+    legacy = os.path.join(ROOT, "data", tmpl.format(run=famrun, lev=level))
+    if legacy and os.path.exists(legacy):
+        shutil.copy(legacy, out)
+        log(f"  {model}: seeded from data/")
+        return out
+    if model == "aifs-ens":
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(4), LEVEL=str(level), OUT=out)
+        rc, so, se = sh([PY, os.path.join(HERE, "fetch_aifs.py")], env)
+    elif model == "aifs-single":
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(4), LEVEL=str(level), OUT=out)
+        rc, so, se = sh([PY, os.path.join(HERE, "fetch_aifs_single.py")], env)
+    elif model in ("eps", "ifs"):
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(4), LEVEL=str(level))
+        mode = "eps" if model == "eps" else "control"
+        rc, so, se = sh([PY, os.path.join(HERE, "fetch_eps.py"), "--mode", mode], env)
+        src = (f"eps_{run}00_u{level}.npz" if model == "eps" else f"ifs_ctl_{run}00_u{level}.npz")
+        src = os.path.join(ROOT, "data", src)
+        if rc == 0 and os.path.exists(src):
+            shutil.copy(src, out)
+        else:
+            return None
+    elif model in ("gefs", "gfs", "gefs_members"):
+        prod = {"gefs": "gefs_mean", "gfs": "gfs_ctl", "gefs_members": "gefs_members"}[model]
+        rc, so, se = sh([PY, os.path.join(HERE, "fetch_noaa.py"), "--product", prod,
+                         "--date", date, "--cyc", cyc, "--out", out])
+    else:
+        return None
+    if rc != 0 or not os.path.exists(out):
+        log(f"  {model}: FAILED rc={rc} {se.strip()[:160]}")
+        return None
+    log(f"  {model}: fetched")
+    return out
+
+
+def fetch_gefs_control(date, cyc, level):
+    out = os.path.join(SELDIR, f"gefs_ctl_{date}{cyc}_u{level}.npz")
+    if os.path.exists(out):
+        return out
+    rc, so, se = sh([PY, os.path.join(HERE, "fetch_noaa.py"), "--product", "gefs_ctl",
+                     "--date", date, "--cyc", cyc, "--out", out])
+    return out if rc == 0 else None
+
+
+# -------------------------------------------------------------------- rendering
+def _series_for_tab(tab, cycle, level, lat):
+    """Collect the series each tab needs from the store."""
+    run = cycle
+    S = {}
+
+    def add(key, path, member=None, zonal=True, lat_idx=None):
+        if not path or not os.path.exists(path):
+            return
+        d = np.load(path, allow_pickle=True)
+        if member is None:                      # scalar series (u60 / nh_mean)
+            t = np.array(d["steps"]) if "steps" in d else None
+            vals = d["u60"] if "u60" in d else d.get("nh_mean")
+            S[key] = (t, vals)
+        else:                                  # zonal profile per member
+            if "zonal" not in d:
+                return                          # this model keeps only the mean
+            z = d["zonal"]
+            lats = d["lats"]
+            i = int(np.abs(lats - lat).argmin())
+            prof = z[:, :, i] if z.ndim == 3 else z[:, i]
+            t = d["steps"]
+            S[key] = (t, prof)
+
+    def p(model):
+        return series_path(model, run, level)
+
+    add("aifs_mean", p("aifs-ens"), member="ctl")
+    add("aifs_ctl", p("aifs-ens"), member="ctl")
+    add("aifs_single", p("aifs-single"), member="all")
+    add("eps_mean", p("eps"))
+    add("ifs_ctl", p("ifs"))
+    add("gefs_mean", p("gefs"))
+    add("gefs_ctl", p("gefs_ctl"))
+    add("gfs", p("gfs"))
+    if tab == "ensembles":
+        add("aifs_ens_members", p("aifs-ens"), member="members")
+        add("eps_members", p("eps"), member="members")
+        add("gefs_members", p("gefs_members"), member="members")
+    # aifs mean/control need separate extraction below
+    if os.path.exists(p("aifs-ens")):
+        d = np.load(p("aifs-ens"), allow_pickle=True)
+        z = d["zonal"]; lats = d["lats"]; i = int(np.abs(lats - lat).argmin())
+        t = d["steps"]
+        prof = z[:, :, i]
+        pert = list(range(1, prof.shape[1]))
+        S["aifs_mean"] = (t, prof[:, pert].mean(axis=1))
+        S["aifs_ctl"] = (t, prof[:, 0])
+        if tab == "ensembles":
+            S["aifs_ens_members"] = (t, prof[:, pert])      # (nstep, nmember)
+    if os.path.exists(p("eps")):
+        d = np.load(p("eps"), allow_pickle=True)
+        S["eps_mean"] = (d["steps"], d["u60"])
+        if "zonal" in d:
+            z = d["zonal"]; lats = d["lats"]; i = int(np.abs(lats - lat).argmin())
+            S["eps_members"] = (d["steps"], z[:, :, i])
+    if os.path.exists(p("ifs")):
+        d = np.load(p("ifs"), allow_pickle=True)
+        S["ifs_ctl"] = (d["steps"], d["u60"])
+    for key in ("aifs_ens_members", "eps_members", "gefs_members"):
+        if key in S:
+            t, pr = S[key]
+            S[key] = (t, pr.T)          # -> (nmember, nstep)
+    return S
+
+
+def render_all(cycle, level, lat):
+    import render
+    S = _series_for_tab("ensembles", cycle, level, lat)   # superset: includes members
+    if not S:
+        log("  nothing to render")
+        return []
+    times = np.concatenate([np.asarray(v[0]) for v in S.values()])
+    t0 = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}:00")
+    t0 = t0.tz_localize(None)
+    clim_pick, clim_sd = render.load_clim(level, lat, t0, t0 + pd.Timedelta(hours=360))
+    analysis = float(S["aifs_ctl"][1][0]) if "aifs_ctl" in S else float("nan")
+    outs = []
+    for tab, _ in TABS:
+        tabS = dict(S)
+        if tab == "physics":
+            for k in ("aifs_mean", "aifs_ctl", "aifs_single"):
+                tabS.pop(k, None)
+        if tab == "ai":
+            for k in ("eps_mean", "ifs_ctl", "gefs_mean", "gefs_ctl", "gfs"):
+                tabS.pop(k, None)
+        if tab == "ensembles":
+            tabS = {k: v for k, v in S.items() if k in
+                    ("aifs_mean", "aifs_ctl", "eps_mean", "gefs_mean",
+                     "aifs_ens_members", "eps_members", "gefs_members")}
+        out = os.path.join(FIGDIR, f"{tab}_{cycle}_u{level}_{int(lat)}.png")
+        render.render_tab(tab, tabS, clim_pick, clim_sd, out, level, lat, cycle, analysis)
+        outs.append(out)
+        log(f"  rendered {os.path.basename(out)}")
+    return outs
+
+
+# ------------------------------------------------------------------------ main
+def sync(level=10, lat=60.0, only=None, members=True, force=False):
+    """Fetch what is missing and render the four tabs. Idempotent."""
+    lock = os.path.join(STORE, ".sync.lock")
+    if os.path.exists(lock) and time.time() - os.path.getmtime(lock) < 3600:
+        log("another sync is running (lock present) - exiting")
+        return
+    open(lock, "w").close()
+    try:
+        _sync(level, lat, only, members, force)
+    finally:
+        try:
+            os.remove(lock)
+        except OSError:
+            pass
+
+
+def _sync(level, lat, only, members, force):
+    status = {}
+    stf = os.path.join(STORE, "status.json")
+    if os.path.exists(stf):
+        status = json.load(open(stf))
+    ec_date, ec_cyc = resolve_ecmwf()
+    gfs_date, gfs_cyc = resolve_ncep("noaa-gfs-bdp-pds", "gfs")
+    gefs_date, gefs_cyc = resolve_ncep("noaa-gefs-pds", "gefs")
+    log(f"ECMWF newest complete: {ec_date} {ec_cyc}z | GFS: {gfs_date} {gfs_cyc}z | GEFS: {gefs_date} {gefs_cyc}z")
+    cyc_ec = f"{ec_date}{ec_cyc}" if ec_date else None   # 10-digit YYYYMMDDHH
+    cyc_gfs = f"{gfs_date}{gfs_cyc}" if gfs_date else None
+    cyc_gefs = f"{gefs_date}{gefs_cyc}" if gefs_date else None
+
+    # ECMWF models (AIFS ENS/Single, IFS control, EPS) share the ECMWF cycle
+    if ec_date:
+        for m in ("aifs-ens", "aifs-single", "ifs", "eps"):
+            if only and m not in only:
+                continue
+            fetch_model(m, ec_date, ec_cyc, level)
+    # NCEP models
+    if gfs_date:
+        fetch_model("gfs", gfs_date, gfs_cyc, level)
+    if gefs_date:
+        fetch_model("gefs", gefs_date, gefs_cyc, level)
+        if members:
+            fetch_model("gefs_members", gefs_date, gefs_cyc, level)
+        fetch_gefs_control(gefs_date, gefs_cyc, level)
+
+    # the figure cycle = the newest cycle that has the most models
+    counts = {}
+    for cyc in (cyc_ec, cyc_gfs, cyc_gefs):
+        if not cyc:
+            continue
+        n = sum(1 for m in MODELS
+                if os.path.exists(series_path(m, cyc, level)) or
+                (m == "gefs" and os.path.exists(os.path.join(SELDIR, f"gefs_ctl_{cyc}_u{level}.npz"))))
+        counts[cyc] = n
+    if not counts:
+        log("no cycles available")
+        return
+    cycle = max(counts, key=lambda c: counts[c])
+    have = [f for f in os.listdir(FIGDIR) if f"_{cycle}_" in f]
+    if have and not force and len(have) >= 4:
+        log(f"cycle {cycle} already rendered ({len(have)} figures) - skipping render")
+        outs = [os.path.join(FIGDIR, f) for f in have if f.endswith(".png")]
+    else:
+        log(f"rendering cycle {cycle} (models present: {counts[cycle]})")
+        outs = render_all(cycle, level, lat)
+
+    # history: keep the last KEEP cycles of figures
+    KEEP = 14
+    keep = sorted({f.split("_")[1] for f in os.listdir(FIGDIR)})[-KEEP:]
+    for f in os.listdir(FIGDIR):
+        cyc = f.split("_")[1]
+        if cyc not in keep:
+            os.remove(os.path.join(FIGDIR, f))
+    cycles = {}
+    for f in sorted(os.listdir(FIGDIR)):
+        parts = f.split("_")
+        cyc = parts[1]
+        tab = parts[0]
+        cycles.setdefault(cyc, {})[tab] = f
+    latest = {"cycle": cycle, "level": level, "lat": lat,
+              "updated": datetime.now(timezone.utc).isoformat(),
+              "figures": {os.path.basename(p): f"/fig/{os.path.basename(p)}" for p in outs},
+              "cycles": cycles,
+              "models": {m: {"label": MODELS[m][1], "tab": MODELS[m][0],
+                              "family": MODELS[m][2]} for m in MODELS}}
+    json.dump(latest, open(os.path.join(STORE, "latest.json"), "w"), indent=2)
+    status["last_sync"] = datetime.now(timezone.utc).isoformat()
+    status["cycles"] = {"ecmwf": cyc_ec, "gfs": cyc_gfs, "gefs": cyc_gefs}
+    status["rendered"] = cycle
+    json.dump(status, open(stf, "w"), indent=2)
+    log("store updated ->", os.path.join(STORE, "latest.json"))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("cmd", choices=["resolve", "sync", "list"])
+    ap.add_argument("--level", type=int, default=10)
+    ap.add_argument("--lat", type=float, default=60.0)
+    ap.add_argument("--only", default=None)
+    ap.add_argument("--quick", action="store_true", help="skip ensemble-member series")
+    ap.add_argument("--force", action="store_true", help="re-render even if present")
+    a = ap.parse_args()
+    if a.cmd == "resolve":
+        print("ECMWF:", resolve_ecmwf())
+        print("GFS  :", resolve_ncep("noaa-gfs-bdp-pds", "gfs"))
+        print("GEFS :", resolve_ncep("noaa-gefs-pds", "gefs"))
+    elif a.cmd == "sync":
+        only = a.only.split(",") if a.only else None
+        sync(a.level, a.lat, only, members=not a.quick, force=a.force)
+    else:
+        f = os.path.join(STORE, "latest.json")
+        print(json.dumps(json.load(open(f)), indent=2) if os.path.exists(f) else "store empty")
+        print("\nseries files:")
+        for p in sorted(os.listdir(SELDIR)):
+            print("  ", p)
+        print("\nfigures:")
+        for p in sorted(os.listdir(FIGDIR)):
+            print("  ", p)
+
+
+if __name__ == "__main__":
+    main()

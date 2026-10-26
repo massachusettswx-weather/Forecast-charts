@@ -1,0 +1,9 @@
+numpy
+pandas
+matplotlib
+requests
+numcodecs
+fastapi
+uvicorn
+jinja2
+eccodes

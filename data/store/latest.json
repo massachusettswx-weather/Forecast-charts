@@ -1,0 +1,57 @@
+{
+  "cycle": "2026102612",
+  "level": 10,
+  "lat": 60.0,
+  "updated": "2026-10-26T23:44:31.823133+00:00",
+  "figures": {
+    "ai_2026102612_u10_60.png": "/fig/ai_2026102612_u10_60.png",
+    "ensembles_2026102612_u10_60.png": "/fig/ensembles_2026102612_u10_60.png",
+    "hybrid_2026102612_u10_60.png": "/fig/hybrid_2026102612_u10_60.png",
+    "physics_2026102612_u10_60.png": "/fig/physics_2026102612_u10_60.png"
+  },
+  "cycles": {
+    "2026102612": {
+      "ai": "ai_2026102612_u10_60.png",
+      "ensembles": "ensembles_2026102612_u10_60.png",
+      "hybrid": "hybrid_2026102612_u10_60.png",
+      "physics": "physics_2026102612_u10_60.png"
+    }
+  },
+  "models": {
+    "aifs-single": {
+      "label": "ECMWF AIFS Single",
+      "tab": "ai",
+      "family": "ecmwf"
+    },
+    "aifs-ens": {
+      "label": "ECMWF AIFS ENS",
+      "tab": "ai",
+      "family": "ecmwf"
+    },
+    "ifs": {
+      "label": "ECMWF IFS",
+      "tab": "physics",
+      "family": "ecmwf"
+    },
+    "eps": {
+      "label": "ECMWF EPS",
+      "tab": "physics",
+      "family": "ecmwf"
+    },
+    "gfs": {
+      "label": "NOAA GFS",
+      "tab": "physics",
+      "family": "ncep"
+    },
+    "gefs": {
+      "label": "NOAA GEFS",
+      "tab": "physics",
+      "family": "ncep"
+    },
+    "gefs_members": {
+      "label": "NOAA GEFS members",
+      "tab": "ensembles",
+      "family": "ncep"
+    }
+  }
+}

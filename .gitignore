@@ -1,0 +1,15 @@
+venv/
+data/era5_cache/
+data/idx/
+data/*.npz
+data/store/series/
+site_out/
+logs_*.txt
+__pycache__/
+*.pyc
+.home/
+.mavis/
+.plugin-cache/
+attachments/
+*.idx
+*.html

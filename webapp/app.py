@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""
+Forecast site: serves the four tabs straight off the run store.
+
+    uvicorn site.app:app --host 0.0.0.0 --port 8000
+
+Routes
+    GET /                 tabbed page (Physics | AI | Hybrid | Ensembles)
+    GET /api/latest       what is currently published
+    GET /fig/<name>.png   rendered figure
+    GET /api/series/<model>   raw series as JSON
+    GET /healthz          liveness + last sync
+"""
+import json
+import os
+import time
+from datetime import datetime, timedelta, timezone
+
+import numpy as np
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+STORE = os.path.join(ROOT, "data", "store")
+FIGDIR = os.path.join(STORE, "figures")
+SELDIR = os.path.join(STORE, "series")
+
+app = FastAPI(title="Stratosphere forecast charts", docs_url="/api/docs")
+templates = Jinja2Templates(directory=os.path.join(HERE, "templates"))
+
+SOURCES = {
+    "aifs-single": "ECMWF open data (0.25°)",
+    "aifs-ens": "ECMWF open data (0.25°)",
+    "ifs": "ECMWF open data (0.25°)",
+    "eps": "ECMWF open data (0.25°)",
+    "gfs": "NOAA open data (0.25°)",
+    "gefs": "NOAA open data (0.5°)",
+    "gefs_members": "NOAA open data (0.5°)",
+}
+
+TABS = [("physics", "Physics-based", "ECMWF IFS + EPS, NOAA GFS + GEFS"),
+        ("ai", "AI", "ECMWF AIFS Single + AIFS ENS"),
+        ("hybrid", "Hybrid (physics + AI)", "every model on one graph"),
+        ("ensembles", "Ensembles (members)", "member spaghetti + mean/control")]
+
+
+def latest():
+    f = os.path.join(STORE, "latest.json")
+    if not os.path.exists(f):
+        return {"cycle": None, "figures": {}, "models": {}}
+    try:
+        return json.load(open(f))
+    except Exception:
+        return {"cycle": None, "figures": {}, "models": {}}
+
+
+@app.get("/")
+def index(request: Request):
+    d = latest()
+    cycles = d.get("cycles", {}) or {}
+    cyc_list = sorted(cycles.keys(), reverse=True)
+    figs = []
+    for key, title, blurb in TABS:
+        cand = [cycles[c][key] for c in cyc_list if key in cycles.get(c, {})]
+        img = ("/fig/" + cand[0]) if cand else None
+        figs.append(dict(key=key, title=title, blurb=blurb, img=img))
+    cyc = d.get("cycle")
+    cycles = d.get("cycles", {}) or {cyc: {}}
+    cyc_list = sorted(cycles.keys(), reverse=True)
+    labels = {}
+    for c in cyc_list:
+        try:
+            labels[c] = datetime.strptime(c, "%Y%m%d%H").strftime("%d %b %Y %H%M UTC")
+        except Exception:
+            labels[c] = c
+    when = labels.get(cyc, cyc)
+    age_h = None
+    try:
+        upd = datetime.fromisoformat(d.get("updated", ""))
+        age_h = int((datetime.now(timezone.utc) - upd).total_seconds() // 3600)
+    except Exception:
+        pass
+    valid_from = valid_to = ""
+    try:
+        t0 = datetime.strptime(cyc, "%Y%m%d%H")
+        valid_from = t0.strftime("%d %b")
+        valid_to = (t0 + timedelta(hours=360)).strftime("%d %b")
+    except Exception:
+        pass
+    return templates.TemplateResponse(request, "index.html", {
+        "tabs": figs, "cycle": cyc, "when": when,
+        "updated": d.get("updated", ""), "level": d.get("level", 10),
+        "lat": d.get("lat", 60), "models": d.get("models", {}),
+        "cycle_list": cyc_list, "cycle_labels": labels,
+        "cycles_json": json.dumps(cycles),
+        "age_hours": age_h, "valid_from": valid_from, "valid_to": valid_to,
+        "sources": SOURCES,
+    })
+
+
+@app.get("/api/latest")
+def api_latest():
+    return JSONResponse(latest())
+
+
+@app.get("/healthz")
+def healthz():
+    st = os.path.join(STORE, "status.json")
+    s = json.load(open(st)) if os.path.exists(st) else {}
+    return {"ok": True, "now": datetime.now(timezone.utc).isoformat(),
+            "last_sync": s.get("last_sync"), "rendered": s.get("rendered")}
+
+
+@app.get("/fig/{name}")
+def fig(name: str):
+    p = os.path.join(FIGDIR, os.path.basename(name))
+    if not os.path.exists(p):
+        raise HTTPException(404, "no such figure")
+    return FileResponse(p, media_type="image/png" if name.endswith(".png") else "application/pdf")
+
+
+@app.get("/api/series/{model}")
+def api_series(model: str, level: int = 10):
+    d = latest()
+    cyc = d.get("cycle")
+    if not cyc:
+        raise HTTPException(404, "no cycle published yet")
+    p = os.path.join(SELDIR, f"{model}_{cyc}_u{level}.npz")
+    if not os.path.exists(p):
+        raise HTTPException(404, "no series for that model")
+    z = np.load(p, allow_pickle=True)
+    out = {"model": model, "cycle": cyc, "level": level,
+           "steps": [int(s) for s in z["steps"]]}
+    if "u60" in z:
+        out["u60"] = [float(v) for v in z["u60"]]
+    if "nh_mean" in z:
+        out["nh_mean"] = [float(v) for v in z["nh_mean"]]
+    if "zonal" in z:
+        out["zonal_shape"] = list(z["zonal"].shape)
+    return JSONResponse(out)
+
+
+app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="static")
