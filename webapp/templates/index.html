@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stratosphere zonal wind — 60˚N @ 10 hPa</title>
+<meta name="description" content="Automated 60N zonal-mean zonal wind at 10 hPa from ECMWF AIFS/IFS/EPS and NOAA GFS/GEFS against the ERA5 1991-2020 climatology. Updated 4x daily.">
+<style>
+  :root { --ink:#14171a; --mut:#5b6670; --line:#e3e7ea; --bg:#f6f7f8; --card:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+         color:var(--ink); background:var(--bg); }
+  header, main, footer { padding-left:26px; padding-right:26px; }
+  header { padding-top:20px; }
+  h1 { margin:0 0 6px; font-size:22px; font-weight:800; letter-spacing:-.2px; }
+  h2 { font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--mut); margin:26px 0 8px; }
+  .sub { color:var(--mut); font-size:13.5px; margin-bottom:14px; }
+  .sub b { color:var(--ink); }
+  .pill { display:inline-block; background:#eef1f3; border:1px solid var(--line); border-radius:99px;
+          padding:1px 9px; font-size:12px; font-weight:600; color:var(--ink); }
+  .pill.fresh { background:#e6f4ea; border-color:#b6dfc2; }
+  .pill.stale { background:#fdf0e3; border-color:#f0d3ab; }
+  nav { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+  button.tab { appearance:none; border:1px solid var(--line); background:var(--card); color:var(--mut);
+               padding:9px 16px; font-size:14px; font-weight:600; cursor:pointer; border-radius:7px 7px 0 0; }
+  button.tab:hover { color:var(--ink); }
+  button.tab[aria-selected="true"] { background:var(--ink); color:#fff; border-color:var(--ink); }
+  select.cycle { margin-left:auto; font:inherit; font-size:13.5px; padding:7px 10px; border:1px solid var(--line);
+                 border-radius:7px; background:var(--card); color:var(--ink); }
+  main { padding-top:14px; padding-bottom:30px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .card img { width:100%; height:auto; display:block; border-radius:4px; }
+  .blurb { color:var(--mut); font-size:13px; margin:2px 0 12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; }
+  .grid .card { padding:13px 15px; }
+  .grid h3 { margin:0 0 4px; font-size:14px; }
+  .grid p { margin:0; color:var(--mut); font-size:13px; }
+  .grid .tag { display:inline-block; font-size:11px; letter-spacing:.04em; text-transform:uppercase;
+               color:var(--mut); border:1px solid var(--line); border-radius:99px; padding:0 7px; margin-left:6px; }
+  table.models { border-collapse:collapse; width:100%; max-width:860px; font-size:13.5px; }
+  table.models th, table.models td { text-align:left; padding:7px 12px 7px 0; border-bottom:1px solid var(--line); }
+  table.models th { color:var(--mut); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+  footer { padding-bottom:30px; color:var(--mut); font-size:12.5px; }
+  code { background:#eceff1; padding:1px 5px; border-radius:4px; }
+  a { color:#1565c0; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink:#eef1f3; --mut:#9aa5ae; --line:#2a3138; --bg:#0f1317; --card:#161b20; }
+    button.tab { background:#161b20; }
+    button.tab[aria-selected="true"]{ background:#eef1f3; color:#0f1317; border-color:#eef1f3; }
+    .pill { background:#1c2228; } .pill.fresh{ background:#15311d; border-color:#245c37; }
+    .pill.stale{ background:#33250f; border-color:#5c4520; }
+    code { background:#1c2228; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Stratosphere — Zonal Mean Zonal Wind, 60˚N @ 10 hPa</h1>
+  <div class="sub">
+    {% if cycle %}
+      <span class="pill {{ 'fresh' if age_hours is not none and age_hours < 8 else 'stale' }}">{{ when }}</span>
+      &nbsp;·&nbsp; valid {{ valid_from }} → {{ valid_to }}
+      &nbsp;·&nbsp; updated {{ age_hours }} h ago
+      &nbsp;·&nbsp; ERA5 1991–2020 climatology
+    {% else %}
+      <span class="pill">waiting for the first run</span>
+    {% endif %}
+  </div>
+  <nav role="tablist">
+    {% for t in tabs %}
+      <button class="tab" role="tab" data-key="{{ t.key }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ t.title }}</button>
+    {% endfor %}
+    <select class="cycle" id="cyclepick" title="forecast cycle">
+      {% for c in cycle_list %}
+        <option value="{{ c }}" {{ 'selected' if c == cycle else '' }}>{{ cycle_labels.get(c, c) }}</option>
+      {% endfor %}
+    </select>
+  </nav>
+</header>
+
+<main>
+  {% for t in tabs %}
+  <section class="panel" data-key="{{ t.key }}" {% if not loop.first %}hidden{% endif %}>
+    <div class="blurb">{{ t.blurb }}</div>
+    <div class="card">
+      {% if t.img %}
+        <img id="img-{{ t.key }}" src="{{ t.img }}" alt="{{ t.title }}">
+      {% else %}
+        <p style="color:var(--mut)">No figure for this tab yet — the watcher renders it after the next suite.</p>
+      {% endif %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <h2>Models on this chart</h2>
+  <table class="models">
+    <tr><th>Model</th><th>Type</th><th>Tab</th><th>Source</th></tr>
+    {% for key, m in models.items() %}
+    <tr><td><b>{{ m.label }}</b></td>
+        <td>{{ 'AI' if m.family == 'ai' else ('Physics' if m.family == 'physics' else 'Ensemble members') }}</td>
+        <td>{{ m.tab }}</td>
+        <td>{{ sources.get(key, '') }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>About the data</h2>
+  <div class="grid">
+    <div class="card"><h3>Forecast models</h3><p>ECMWF open data (AIFS ENS 51 members, AIFS Single, IFS control, EPS 50 perturbed members) and NOAA open data (GFS deterministic, GEFS mean + control + 30 perturbed members). Raw GRIB2 is fetched straight from the archives; only the u&nbsp;@&nbsp;10&nbsp;hPa message is downloaded, using the published index files.</p></div>
+    <div class="card"><h3>Climatology</h3><p>ERA5 1991–2020 reanalysis, zonal-mean u at 60˚N, daily 12&nbsp;Z, with ±1σ and ±2σ across the 30 years. Cached locally, so every level and latitude is an instant lookup.</p></div>
+    <div class="card"><h3>How it updates</h3><p>A watcher runs four times daily at 02, 08, 14 and 20&nbsp;UTC — two hours after each six-hourly suite is disseminated. It resolves the newest published cycle, fetches only what is missing, and re-renders these charts.</p></div>
+  </div>
+</main>
+
+<footer>
+  Charts by <code>scripts/pipeline.py</code> · store in <code>data/store/</code> · machine-readable:
+  <a href="latest.json">latest.json</a> · source charts: ECMWF open data, NOAA open data, ARCO-ERA5.
+</footer>
+
+<script>
+  const tabs = [...document.querySelectorAll('button.tab')];
+  const panels = [...document.querySelectorAll('section.panel')];
+  tabs.forEach(b => b.addEventListener('click', () => {
+    tabs.forEach(x => x.setAttribute('aria-selected', String(x === b)));
+    panels.forEach(p => p.hidden = p.dataset.key !== b.dataset.key);
+  }));
+
+  const CYCLES = {{ cycles_json | safe }};
+  const pick = document.getElementById('cyclepick');
+  if (pick) pick.addEventListener('change', () => {
+    const c = CYCLES[pick.value] || {};
+    panels.forEach(p => {
+      const img = document.getElementById('img-' + p.dataset.key);
+      if (img && c[p.dataset.key]) img.src = 'fig/' + c[p.dataset.key];
+    });
+  });
+</script>
+</body>
+</html>

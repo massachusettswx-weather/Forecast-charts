@@ -11,5 +11,5 @@ __pycache__/
 .mavis/
 .plugin-cache/
 attachments/
-*.idx
-*.html
+/*.html
+/*.idx

@@ -11,6 +11,7 @@ on:
       - "webapp/**"
       - "Makefile"
       - "requirements.txt"
+      - ".gitignore"
   schedule:
     - cron: "0 2,8,14,20 * * *"
   workflow_dispatch:
