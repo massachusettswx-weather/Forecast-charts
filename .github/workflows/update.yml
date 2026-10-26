@@ -3,6 +3,14 @@ name: update-forecast-charts
 # 4x daily, eight hours after each initialisation = two hours after each suite
 # is disseminated:  00Z suite -> 08Z | 06Z -> 14Z | 12Z -> 20Z | 18Z -> 02Z
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/update.yml"
+      - "scripts/**"
+      - "webapp/**"
+      - "Makefile"
+      - "requirements.txt"
   schedule:
     - cron: "0 2,8,14,20 * * *"
   workflow_dispatch:
