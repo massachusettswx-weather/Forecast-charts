@@ -140,7 +140,7 @@ def work_oper(step):
     r = rows[0]
     blob = get(url, r["_offset"], r["_offset"] + r["_length"] - 1)
     a, b, prof, lat = decode(blob)
-    return step, a, b
+    return step, a, b, prof, lat
 
 
 if __name__ == "__main__":
@@ -161,7 +161,9 @@ if __name__ == "__main__":
     if ctl:
         ctl.sort()
         np.savez_compressed(out_ctl, steps=np.array([r[0] for r in ctl]),
-                            u60=np.array([r[1] for r in ctl]), nh_mean=np.array([r[2] for r in ctl]))
+                            u60=np.array([r[1] for r in ctl]), nh_mean=np.array([r[2] for r in ctl]),
+                            zonal=np.array([r[3] for r in ctl], dtype=np.float32),
+                            lats=ctl[0][4])
         print(f"IFS control saved {out_ctl} ({time.time()-t0:.0f}s)", flush=True)
 
     eps = []

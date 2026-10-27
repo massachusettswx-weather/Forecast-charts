@@ -148,7 +148,7 @@ def main():
         off, ln = entry
         blob = get(s3(bucket, key), off, off + ln - 1)
         u60, nhm, z, lat = decode(blob)
-        return step, u60, nhm
+        return step, u60, nhm, z
 
     t0 = time.time()
     if a.product == "gefs_members":
@@ -212,7 +212,9 @@ def main():
     np.savez_compressed(out,
                         steps=np.array([r[0] for r in res]),
                         u60=np.array([r[1] for r in res]),
-                        nh_mean=np.array([r[2] for r in res]))
+                        nh_mean=np.array([r[2] for r in res]),
+                        zonal=np.array([r[3] for r in res], dtype=np.float32),
+                        lats=res[0][4])
     print(f"saved {out}  ({len(res)} steps, {time.time()-t0:.0f}s)", flush=True)
     print("  u60 F000 %.2f  F384 %.2f" % (res[0][1], res[-1][1]), flush=True)
 

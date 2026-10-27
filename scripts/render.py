@@ -49,18 +49,33 @@ def step_times(steps, cycle):
     return t0 + pd.to_timedelta(np.asarray(steps), unit="h")
 
 
-def domain_label(lat):
-    """'60˚N', '70˚N', 'NH (0-90N)'."""
-    if lat == 0:
-        return "NH (0-90N)"
-    return f"{lat:.0f}˚N"
+DOMAIN_SPECS = {}
 
 
-def load_clim(level, lat, t0, t1):
-    # lat 0 = the NH (0-90N) area-weighted mean
-    mean, std, _ = EC.climatology(level, lat=(None if lat == 0 else lat),
+def _spec(domain):
+    """The domain spec (label + how to reduce a profile to that domain)."""
+    if not DOMAIN_SPECS:
+        import site_meta
+        DOMAIN_SPECS.update(site_meta.DOMAINS)
+    return DOMAIN_SPECS[str(domain)]
+
+
+def domain_label(domain):
+    """'60˚N', '70˚N', 'NH (0-90N)', 'Polar cap (65-90N)'."""
+    return _spec(domain)["label"]
+
+
+def load_clim(level, domain, t0, t1):
+    spec = _spec(domain)
+    if spec["kind"] == "lat":
+        kw = {"lat": spec["lat"]}
+    elif spec["kind"] == "nh":
+        kw = {"lat": None}
+    else:
+        kw = {"lat_range": spec["range"]}
+    mean, std, _ = EC.climatology(level,
                                   start=f"{t0.month:02d}-{t0.day:02d}",
-                                  end=f"{t1.month:02d}-{t1.day:02d}")
+                                  end=f"{t1.month:02d}-{t1.day:02d}", **kw)
     def pick(times):
         out = []
         for t in times:

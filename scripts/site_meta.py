@@ -21,10 +21,17 @@ SOURCES = {
     "gefs_members": "NOAA open data (0.5°)",
 }
 
-# domains the site offers; 0 = the NH (0-90N) area-weighted mean
+# The domains the site offers. A domain is a latitude, the NH aggregate or
+# the polar cap - all of them are free, the zonal profiles are already stored.
+DOMAINS = {
+    "60":  {"label": "60˚N", "kind": "lat", "lat": 60.0},
+    "70":  {"label": "70˚N", "kind": "lat", "lat": 70.0},
+    "0":   {"label": "NH (0-90N)", "kind": "nh", "lat": 0.0},
+    "cap": {"label": "Polar cap (65-90N)", "kind": "cap", "range": (65.0, 90.0)},
+}
 DEFAULT_LAT = "60"
-LAT_ORDER = ["60", "70", "0"]
-LAT_LABELS = {"60": "60˚N", "70": "70˚N", "0": "NH (0-90N)"}
+LAT_ORDER = ["60", "70", "0", "cap"]
+LAT_LABELS = {k: v["label"] for k, v in DOMAINS.items()}
 
 
 def lat_sort_key(lat):

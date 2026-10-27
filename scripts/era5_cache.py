@@ -175,13 +175,15 @@ def build(start="10-25", end="11-09", years=range(1991, 2021), hour=12, workers=
 
 # ----------------------------------------------------------------- query
 def climatology(level_hPa, lat=None, start="01-01", end="12-31",
-                years=range(1991, 2021), agg="mean"):
+                years=range(1991, 2021), agg="mean", lat_range=None):
     """
     Return (mean, std, count) of ERA5 zonal-mean u at `level_hPa` from the
     local cache, for every (date, hour) in the window, aggregated over `years`.
 
-    lat=None  -> NH (0-90N) area-weighted mean
-    lat=float -> zonal-mean u at that latitude
+    lat=None    -> NH (0-90N) area-weighted mean
+    lat=float   -> zonal-mean u at that latitude
+    lat_range   -> area-weighted mean over that latitude band, e.g. (65, 90)
+                   for the polar cap
     """
     m = manifest()
     if not len(m):
@@ -206,7 +208,12 @@ def climatology(level_hPa, lat=None, start="01-01", end="12-31",
     arr = np.load(PROF, mmap_mode="r")
     rows_ix = sel.index.to_numpy()            # positional rows in the store
     block = np.asarray(arr[rows_ix, lev, :], dtype=np.float64)  # (n, 721)
-    if lat is None:
+    if lat_range is not None:
+        lo, hi = float(lat_range[0]), float(lat_range[1])
+        sel_lat = (latv >= lo) & (latv <= hi)
+        w = np.cos(np.deg2rad(latv[sel_lat]))
+        vals = (block[:, sel_lat] * w).sum(axis=1) / w.sum()
+    elif lat is None:
         w = np.cos(np.deg2rad(latv[latv >= 0]))
         vals = (block[:, latv >= 0] * w).sum(axis=1) / w.sum()
     else:

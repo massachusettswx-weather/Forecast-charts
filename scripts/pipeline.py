@@ -28,6 +28,9 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+import site_meta
 STORE = os.path.join(ROOT, "data", "store")
 FIGDIR = os.path.join(STORE, "figures")
 SELDIR = os.path.join(STORE, "series")
@@ -55,10 +58,11 @@ MODELS = {
 TABS = [("physics", "Physics-based"), ("ai", "AI"),
         ("hybrid", "Hybrid (physics + AI)"), ("ensembles", "Ensembles (members)")]
 
-# domains the site offers: a latitude, or 0 = the NH (0-90N) area-weighted mean.
-# Free: the zonal profile of every member is already in the store.
-LATS = (60.0, 70.0, 0.0)
-LAT_LABELS = {60.0: "60˚N", 70.0: "70˚N", 0.0: "NH (0-90N)"}
+# The domains the site offers (see site_meta.DOMAINS): a latitude, the NH
+# aggregate or the polar cap. Free - the zonal profile of every member is
+# already in the store.
+LATS = tuple(site_meta.LAT_ORDER)
+LAT_LABELS = site_meta.LAT_LABELS
 
 # models that must be present for a complete cycle, and the slow extras
 CORE = ("aifs-ens", "aifs-single", "ifs", "eps", "gfs", "gefs", "gefs_ctl")
@@ -292,27 +296,37 @@ def _series_for_tab(tab, cycle, level, lat):
     allowed = set(models_for_cycle(cycle))
     S = {}
 
+    spec = site_meta.DOMAINS[str(lat)]
+    band = (0.0, 90.0) if spec["kind"] == "nh" else spec.get("range")
+
+    def profile_of(z, lats):
+        """The zonal profile reduced to the requested domain."""
+        if spec["kind"] == "lat":
+            i = int(np.abs(lats - spec["lat"]).argmin())
+            return z[:, :, i] if z.ndim == 3 else z[:, i]
+        return band_mean(z, lats, band[0], band[1])
+
     def add(key, path, member=None, zonal=True, lat_idx=None):
         if not path or not os.path.exists(path):
             return
         d = np.load(path, allow_pickle=True)
         if member is None:                      # scalar series (u60 / nh_mean)
             t = np.array(d["steps"]) if "steps" in d else None
-            if lat == 0 and "nh_mean" in d:
-                vals = d["nh_mean"]            # NH area-weighted mean
-            else:
+            if spec["kind"] == "lat":
                 vals = d["u60"] if "u60" in d else d.get("nh_mean")
+            elif "zonal" in d:                  # the band mean from the profile
+                vals = profile_of(np.asarray(d["zonal"], float), d["lats"])
+            elif spec["kind"] == "nh" and "nh_mean" in d:
+                vals = d["nh_mean"]
+            else:
+                return                          # this model has no band value
             S[key] = (t, vals)
         else:                                  # zonal profile per member
             if "zonal" not in d:
                 return                          # this model keeps only the mean
             z = d["zonal"]
             lats = d["lats"]
-            if lat == 0:
-                prof = nh_mean(z, lats)        # NH area-weighted mean
-            else:
-                i = int(np.abs(lats - lat).argmin())
-                prof = z[:, :, i] if z.ndim == 3 else z[:, i]
+            prof = profile_of(z, lats)
             t = d["steps"]
             S[key] = (t, prof)
 
@@ -340,12 +354,7 @@ def _series_for_tab(tab, cycle, level, lat):
     # aifs mean/control need separate extraction below
     if has("aifs-ens"):
         d = np.load(p("aifs-ens"), allow_pickle=True)
-        z = d["zonal"]; lats = d["lats"]
-        if lat == 0:
-            prof = nh_mean(z, lats)
-        else:
-            i = int(np.abs(lats - lat).argmin())
-            prof = z[:, :, i]
+        prof = profile_of(d["zonal"], d["lats"])
         t = d["steps"]
         pert = list(range(1, prof.shape[1]))
         S["aifs_mean"] = (t, prof[:, pert].mean(axis=1))
@@ -356,12 +365,7 @@ def _series_for_tab(tab, cycle, level, lat):
         d = np.load(p("eps"), allow_pickle=True)
         S["eps_mean"] = (d["steps"], d["u60"])
         if "zonal" in d:
-            z = d["zonal"]; lats = d["lats"]
-            if lat == 0:
-                S["eps_members"] = (d["steps"], nh_mean(z, lats))
-            else:
-                i = int(np.abs(lats - lat).argmin())
-                S["eps_members"] = (d["steps"], z[:, :, i])
+            S["eps_members"] = (d["steps"], profile_of(d["zonal"], d["lats"]))
     if has("ifs"):
         d = np.load(p("ifs"), allow_pickle=True)
         S["ifs_ctl"] = (d["steps"], d["u60"])
@@ -372,18 +376,23 @@ def _series_for_tab(tab, cycle, level, lat):
     return S
 
 
-def nh_mean(z, lats):
-    """Area-weighted NH (0-90N) mean of a zonal profile array.
+def band_mean(z, lats, lo=0.0, hi=90.0):
+    """Area-weighted mean of a zonal profile over a latitude band.
 
     z: (nstep, nmember, nlat) or (nstep, nlat); lats: the latitude array.
     """
     z = np.asarray(z, float)
     lats = np.asarray(lats, float)
-    nh = lats >= 0
-    w = np.cos(np.deg2rad(lats[nh]))
+    sel = (lats >= lo) & (lats <= hi)
+    w = np.cos(np.deg2rad(lats[sel]))
     if z.ndim == 3:
-        return (z[:, :, nh] * w).sum(axis=2) / w.sum()
-    return (z[:, nh] * w).sum(axis=1) / w.sum()
+        return (z[:, :, sel] * w).sum(axis=2) / w.sum()
+    return (z[:, sel] * w).sum(axis=1) / w.sum()
+
+
+def nh_mean(z, lats):
+    """Area-weighted NH (0-90N) mean of a zonal profile array."""
+    return band_mean(z, lats, 0.0, 90.0)
 
 
 def available_models(cycle, level):
@@ -472,13 +481,13 @@ def render_all(cycle, level, lat=None, lats=None):
                 tabS = {k: v for k, v in S.items() if k in
                         ("aifs_mean", "aifs_ctl", "eps_mean", "gefs_mean",
                          "aifs_ens_members", "eps_members", "gefs_members")}
-            out = os.path.join(FIGDIR, f"{tab}_{cycle}_u{level}_{int(lat_i)}.png")
+            out = os.path.join(FIGDIR, f"{tab}_{cycle}_u{level}_{lat_i}.png")
             render.render_tab(tab, tabS, clim_pick, clim_sd, out, level, lat_i,
                               cycle, analysis)
             outs.append(out)
             log(f"  rendered {os.path.basename(out)}")
         # SSW watch: the reversal probability product (uses the member series)
-        ssw_out = os.path.join(FIGDIR, f"ssw_{cycle}_u{level}_{int(lat_i)}.png")
+        ssw_out = os.path.join(FIGDIR, f"ssw_{cycle}_u{level}_{lat_i}.png")
         if render.render_ssw(S, clim_pick, clim_sd, ssw_out, level, lat_i, cycle,
                              analysis):
             outs.append(ssw_out)
