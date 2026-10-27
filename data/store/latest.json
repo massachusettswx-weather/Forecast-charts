@@ -1,14 +1,14 @@
 {
-  "cycle": "2026102706",
+  "cycle": "2026102712",
   "level": 10,
   "lat": 60.0,
-  "cycle_label": "06z 27 Oct 2026",
-  "updated": "2026-10-27T15:16:12.439179+00:00",
+  "cycle_label": "12z 27 Oct 2026",
+  "updated": "2026-10-27T19:46:14.443446+00:00",
   "figures": {
-    "physics_2026102706_u10_60.png": "/fig/physics_2026102706_u10_60.png",
-    "ai_2026102706_u10_60.png": "/fig/ai_2026102706_u10_60.png",
-    "hybrid_2026102706_u10_60.png": "/fig/hybrid_2026102706_u10_60.png",
-    "ensembles_2026102706_u10_60.png": "/fig/ensembles_2026102706_u10_60.png"
+    "physics_2026102712_u10_60.png": "/fig/physics_2026102712_u10_60.png",
+    "ai_2026102712_u10_60.png": "/fig/ai_2026102712_u10_60.png",
+    "hybrid_2026102712_u10_60.png": "/fig/hybrid_2026102712_u10_60.png",
+    "ensembles_2026102712_u10_60.png": "/fig/ensembles_2026102712_u10_60.png"
   },
   "cycles": {
     "2026102612": {
@@ -34,6 +34,12 @@
       "ensembles": "ensembles_2026102706_u10_60.png",
       "hybrid": "hybrid_2026102706_u10_60.png",
       "physics": "physics_2026102706_u10_60.png"
+    },
+    "2026102712": {
+      "ai": "ai_2026102712_u10_60.png",
+      "ensembles": "ensembles_2026102712_u10_60.png",
+      "hybrid": "hybrid_2026102712_u10_60.png",
+      "physics": "physics_2026102712_u10_60.png"
     }
   },
   "cycle_models": {
@@ -72,6 +78,16 @@
       "gefs_ctl",
       "gefs_members",
       "gfs"
+    ],
+    "2026102712": [
+      "aifs-ens",
+      "aifs-single",
+      "eps",
+      "gefs",
+      "gefs_ctl",
+      "gefs_members",
+      "gfs",
+      "ifs"
     ]
   },
   "models": {
