@@ -73,6 +73,13 @@ jobs:
           key: grib-index-${{ github.run_id }}
           restore-keys: grib-index-
 
+      - name: Restore the fetched series (so a poll that finds nothing new is cheap)
+        uses: actions/cache@v4
+        with:
+          path: data/store/series
+          key: series-${{ github.run_id }}
+          restore-keys: series-
+
       - name: Sync runs and render charts
         continue-on-error: true
         run: |
