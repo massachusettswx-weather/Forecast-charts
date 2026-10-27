@@ -21,7 +21,10 @@ bold ensemble mean and control on top.*
 
 Refreshed **four times daily** at 03, 09, 15 and 21 UTC — nine hours after each
 model initialisation, i.e. three hours after the next cycle's analysis
-(00Z init → 09Z, 06Z → 15Z, 12Z → 21Z, 18Z → 03Z).
+(00Z init → 09Z, 06Z → 15Z, 12Z → 21Z, 18Z → 03Z). The cron is UTC and never
+changes; after US DST ends on **1 Nov 2026** these simply read one hour later
+in local terms (03Z = 10pm EST instead of 11pm EDT). Everything on the site is
+labelled UTC.
 
 ---
 

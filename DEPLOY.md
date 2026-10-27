@@ -56,6 +56,12 @@ chmod 600 /root/.ssh/github_deploy
 
 (The public key stays registered on GitHub, so nothing needs re-adding there.)
 
+> **US DST note:** the cron is UTC, so it never changes. Only the local clock
+> reading does: DST ends **Sun 1 Nov 2026** (02:00 EDT -> 01:00 EST), after
+> which these runs land one hour *later* in local terms — 03Z is 11pm EDT
+> before the change and **10pm EST** after it. All timestamps in the charts
+> and API are UTC and unaffected.
+
 ### What the workflow does each cycle
 
 ```
