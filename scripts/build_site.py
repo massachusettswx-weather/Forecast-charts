@@ -24,7 +24,8 @@ import site_meta
 TABS = [("physics", "Physics-based", "ECMWF IFS + EPS, NOAA GFS + GEFS"),
         ("ai", "AI", "ECMWF AIFS Single + AIFS ENS"),
         ("hybrid", "Hybrid (physics + AI)", "every model on one graph"),
-        ("ensembles", "Ensembles (members)", "member spaghetti + mean/control")]
+        ("ensembles", "Ensembles (members)", "member spaghetti + mean/control"),
+        ("ssw", "SSW watch", "% of members easterly for 24 h or more - the reversal probability")]
 
 
 def main():

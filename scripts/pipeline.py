@@ -358,6 +358,10 @@ def available_models(cycle, level):
             if os.path.exists(series_path(m, cycle, level))}
 
 
+# bump when the fetch format changes (the store is re-rendered then)
+DATA_VERSION = 2
+
+
 def series_signature(cycle, level):
     """(model, last step) for every model in the store.
 
@@ -370,7 +374,7 @@ def series_signature(cycle, level):
         p = series_path(m, cycle, level)
         if os.path.exists(p):
             out.append((m, series_max_step(p)))
-    return tuple(sorted(out))
+    return (DATA_VERSION, tuple(sorted(out)))
 
 
 def cycle_deadline(cycle):
@@ -436,6 +440,11 @@ def render_all(cycle, level, lat):
         render.render_tab(tab, tabS, clim_pick, clim_sd, out, level, lat, cycle, analysis)
         outs.append(out)
         log(f"  rendered {os.path.basename(out)}")
+    # SSW watch: the reversal probability product (uses the member series)
+    ssw_out = os.path.join(FIGDIR, f"ssw_{cycle}_u{level}_{int(lat)}.png")
+    if render.render_ssw(S, clim_pick, clim_sd, ssw_out, level, lat, cycle, analysis):
+        outs.append(ssw_out)
+        log(f"  rendered {os.path.basename(ssw_out)}")
     return outs
 
 

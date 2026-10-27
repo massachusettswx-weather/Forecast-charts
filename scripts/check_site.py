@@ -62,7 +62,7 @@ def main():
 
     # 1. figures on disk ---------------------------------------------------
     figs = (latest.get("cycles") or {}).get(cycle) or {}
-    for tab in ("physics", "ai", "hybrid", "ensembles"):
+    for tab in ("physics", "ai", "hybrid", "ensembles", "ssw"):
         f = figs.get(tab)
         check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
               f"figure present: {tab}",

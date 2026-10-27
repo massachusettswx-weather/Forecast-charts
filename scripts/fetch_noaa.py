@@ -123,7 +123,7 @@ def decode(blob, level=10):
     w = np.cos(np.deg2rad(lat[nh]))
     nh_mean = float((z[nh] * w).sum() / w.sum())
     i60 = int(np.abs(lat - 60.0).argmin())
-    return float(z[i60]), nh_mean, lat
+    return float(z[i60]), nh_mean, z, lat
 
 
 def main():
@@ -147,7 +147,7 @@ def main():
             return None                  # step not disseminated yet
         off, ln = entry
         blob = get(s3(bucket, key), off, off + ln - 1)
-        u60, nhm, lat = decode(blob)
+        u60, nhm, z, lat = decode(blob)
         return step, u60, nhm
 
     t0 = time.time()
@@ -164,27 +164,29 @@ def main():
                 return None
             off, ln = entry
             blob = get(s3(bucket, key), off, off + ln - 1)
-            u60, nhm, lat = decode(blob)
-            return st, m, u60, nhm, lat.astype(np.float32)
+            u60, nhm, z, lat = decode(blob)
+            # the ZONAL PROFILE (u per latitude) - storing the latitudes here
+            # silently flattened the GEFS member spaghetti
+            return st, m, u60, nhm, z.astype(np.float32), lat.astype(np.float32)
 
         for si, st in enumerate(steps):
             with ThreadPoolExecutor(max_workers=4) as ex:
                 for r in ex.map(work_member, [(st, m) for m in range(1, 31)]):
                     if r is None:
                         continue
-                    st_, m, u60, nhm, lat = r
-                    out_prof.setdefault(st_, {})[m] = (u60, nhm, lat)
+                    st_, m, u60, nhm, z, lat = r
+                    out_prof.setdefault(st_, {})[m] = (u60, nhm, z, lat)
             if (si + 1) % 10 == 0:
                 print(f"  step {si+1}/{len(steps)} {time.time()-t0:.0f}s", flush=True)
         if not out_prof:
             raise SystemExit(f"no {a.product} steps published for {a.date} {cyc}z yet")
         steps_sorted = sorted(out_prof)
         prof = np.array([[out_prof[st][m][2] for m in range(1, 31)] for st in steps_sorted],
-                        dtype=np.float32)
+                        dtype=np.float32)      # (step, member, lat) - u per latitude
         u60 = np.array([[out_prof[st][m][0] for m in range(1, 31)] for st in steps_sorted])
         nh = np.array([[out_prof[st][m][1] for m in range(1, 31)] for st in steps_sorted])
         np.savez_compressed(out, steps=np.array(steps_sorted), u60=u60, nh_mean=nh,
-                            zonal=prof, lats=lat)
+                            zonal=prof, lats=out_prof[steps_sorted[0]][1][3])
         print(f"saved {out}  ({len(steps_sorted)} steps x 30 members, {time.time()-t0:.0f}s)", flush=True)
         print("  u60 F000 mean %.2f  F384 mean %.2f" % (u60[0].mean(), u60[-1].mean()), flush=True)
         return

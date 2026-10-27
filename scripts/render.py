@@ -188,3 +188,114 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
     fig.savefig(out_png.replace(".png", ".pdf"))
     plt.close(fig)
     return out_png
+
+
+# --------------------------------------------------------------- SSW product
+SSW_SPECS = [("aifs_ens_members", "ECMWF AIFS ENS", "#1f4fd8"),
+             ("eps_members", "ECMWF EPS", "#00a0c6"),
+             ("gefs_members", "NOAA GEFS", "#8fbf00")]
+SSW_MIN_HOURS = 24
+
+
+def render_ssw(S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
+    """Reversal probability: % of members easterly for >= 24 h at 60N/10 hPa.
+
+    S: the ensembles-tab series dict (member series + means).
+    """
+    import ssw as SSW
+
+    present = [(k, lab, col) for k, lab, col in SSW_SPECS if k in S]
+    if not present:
+        return None
+    # the store keeps the step hours; turn them into valid times
+    S = {k: (step_times(np.asarray(v[0]), cycle), v[1]) for k, v in S.items()}
+
+    fig, (ax, axp) = plt.subplots(2, 1, figsize=(13.5, 8.2), sharex=True,
+                                   gridspec_kw=dict(height_ratios=[2.3, 1], hspace=0.10))
+    tmin = min(pd.Timestamp(S[k][0][0]) for k, _, _ in present)
+    tmax = max(pd.Timestamp(S[k][0][-1]) for k, _, _ in present)
+    cts = pd.date_range(tmin, tmax, freq="6h")
+    clim = clim_pick(cts)
+    csd = clim_sd(cts)
+
+    # ---- top panel: the members and their reversals -----------------------
+    ax.fill_between(cts, clim - 2 * csd, clim + 2 * csd, color="#d9dce0", alpha=0.75,
+                    lw=0, zorder=1)
+    ax.fill_between(cts, clim - csd, clim + csd, color="#b4b9be", alpha=0.75,
+                    lw=0, zorder=1)
+    ax.plot(cts, clim, color=C["clim"], lw=2.6, zorder=6, label="ERA5 1991-2020 climatology")
+
+    summary = []
+    for key, label, col in present:
+        times, prof = S[key]
+        times = pd.DatetimeIndex(np.asarray(times))
+        u = np.asarray(prof, float).T                       # (nstep, nmember)
+        prob, state, onsets = SSW.reversal_probability(u, SSW_MIN_HOURS)
+        # members
+        for j in range(u.shape[1]):
+            ax.plot(times, u[:, j], color=col, lw=0.7, alpha=0.30, zorder=2)
+        # the 24 h-easterly stretches, drawn heavy
+        for m, i, j in SSW.segments(state):
+            ax.plot(times[i:j + 1], u[i:j + 1, m], color=col, lw=2.4, alpha=0.95,
+                    zorder=5, solid_capstyle="butt")
+        # ensemble mean
+        ax.plot(times, u.mean(axis=1), color=col, lw=2.8, zorder=7,
+                label=f"{label} mean")
+        # probability curve in the lower panel
+        nrev = int((onsets >= 0).sum())
+        first_txt = ""
+        if nrev:
+            on = onsets[onsets >= 0]
+            t_on = pd.DatetimeIndex(times)[int(on.min())]
+            first_txt = f"\n{nrev}/{u.shape[1]} reversed by {t_on:%d %b}"
+        axp.plot(times, prob, color=col, lw=2.6, marker="o", markersize=3.4,
+                 markerfacecolor=col, markeredgecolor="none", zorder=8,
+                 label=f"{label} ({u.shape[1]} members){first_txt}")
+        on = onsets[onsets >= 0]
+        first = int(on.min()) if len(on) else None
+        summary.append((label, col, prob, first, len(on), u.shape[1]))
+
+    ax.axhline(0.0, color="#000000", lw=2.0, zorder=5)
+    ax.set_ylabel("Zonal Wind (m/s)", labelpad=3)
+    ax.yaxis.set_major_locator(MultipleLocator(5))
+    ax.grid(True, alpha=0.35, lw=0.7)
+    ax.set_axisbelow(True)
+    ax.legend(loc="lower left", frameon=True, framealpha=0.95, fontsize=9.6)
+    # the range that matters: the members, the zero line and the climatology
+    d_lo = min(float(np.nanmin(np.asarray(S[k][1], float))) for k, _, _ in present)
+    d_hi = max(float(np.nanmax(np.asarray(S[k][1], float))) for k, _, _ in present)
+    lo = min(d_lo, -6.0) - 1.0
+    hi = max(d_hi, float(np.nanmax(clim))) + 4.0
+    ax.set_ylim(lo, hi)
+
+    # ---- lower panel: % of members reversed -------------------------------
+    axp.axhline(0.0, color="#000000", lw=1.2, zorder=5)
+    axp.set_ylabel("% reversed", labelpad=3)
+    axp.set_ylim(-3, 103)
+    axp.yaxis.set_major_locator(MultipleLocator(25))
+    axp.grid(True, alpha=0.35, lw=0.7)
+    axp.set_axisbelow(True)
+    axp.legend(loc="upper left", frameon=True, framealpha=0.95, fontsize=9.6)
+
+    td = pd.date_range(tmin.normalize(), tmax, freq="2D")
+    axp.xaxis.set_major_locator(FixedLocator(mdates.date2num(td)))
+    axp.xaxis.set_major_formatter(mdates.DateFormatter("%a %d %b"))
+    axp.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+    axp.tick_params(axis="x", labelrotation=0, pad=2)
+    ax.set_xlim(tmin.normalize(), tmax + pd.Timedelta(hours=6))
+
+    dom = f"{lat:.0f}˚N"
+    title = f"SSW watch  •  {dom} @ {level} hPa easterly (≥ {SSW_MIN_HOURS} h) probability"
+    fig.suptitle(title, x=0.062, ha="left", fontsize=16.5, fontweight="bold", y=0.972)
+    fig.text(0.062, 0.933,
+             f"{cycle_label(cycle)}   •   ERA5 1991–2020 climatology   •   "
+             f"criterion: u < 0 m/s for {SSW_MIN_HOURS} h or more",
+             ha="left", va="top", fontsize=10.5, color="#333333")
+    fig.text(0.5, 0.012, "Valid Days", ha="center", va="bottom", fontsize=12.5, color="#111111")
+    fig.text(0.988, 0.010, "@Massachusettswx", ha="right", va="bottom",
+             fontsize=12.5, fontweight="bold", color="#111111")
+    fig.subplots_adjust(left=0.062, right=0.988, top=0.905, bottom=0.075)
+    fig.savefig(out_png, dpi=200)
+    fig.savefig(out_png.replace(".png", ".pdf"))
+    plt.close(fig)
+    return out_png

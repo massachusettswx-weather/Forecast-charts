@@ -77,7 +77,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/store/series
-          key: series-${{ github.run_id }}
+          key: series-v2-${{ github.run_id }}
           restore-keys: series-
 
       - name: Cycle logic regression tests
