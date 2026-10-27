@@ -104,22 +104,40 @@ def _get(url, tries=3):
     return ""
 
 
-def resolve_ecmwf():
-    """Newest ECMWF cycle whose AIFS ENS run is fully published (step 360)."""
+# AIFS ENS is disseminated step by step: the 360 h file appears ~9-10 h after
+# the initialisation, so waiting for it would push every cycle past its 9 h
+# publication deadline. We therefore resolve the LARGEST horizon the archive
+# has actually published and fetch exactly that - the chart shows what has been
+# disseminated, and the next poll picks up the rest.
+HORIZONS = (360, 240, 120, 72)
+MIN_HORIZON = 72          # a cycle is only publishable with at least 3 days out
+
+
+def ecmwf_horizon(date, cyc):
+    """Largest published AIFS ENS horizon (h) for that cycle, or None."""
     import requests
+    for h in HORIZONS:
+        url = (f"{ECMWF_LIST}{date}/{cyc}z/aifs-ens/0p25/enfo/"
+               f"{date}{cyc}0000-{h}h-enfo-cf.index")
+        try:
+            r = requests.get(url, timeout=(10, 25))
+            if r.status_code == 200 and r.text.startswith("{"):
+                return h
+        except Exception:
+            pass
+    return None
+
+
+def resolve_ecmwf():
+    """Newest ECMWF cycle with a usable AIFS ENS -> (date, cyc, horizon)."""
     today = datetime.now(timezone.utc)
     for back in range(0, 5):
         d = (today - timedelta(days=back)).strftime("%Y%m%d")
         for c in ("18", "12", "06", "00"):
-            url = (f"{ECMWF_LIST}{d}/{c}z/aifs-ens/0p25/enfo/"
-                   f"{d}{c}0000-360h-enfo-cf.index")
-            try:
-                r = requests.get(url, timeout=(15, 60))
-                if r.status_code == 200 and r.text.startswith("{"):
-                    return d, c
-            except Exception:
-                pass
-    return None, None
+            h = ecmwf_horizon(d, c)
+            if h is not None and h >= MIN_HORIZON:
+                return d, c, h
+    return None, None, None
 
 
 def _s3_prefixes(bucket, prefix):
@@ -182,12 +200,35 @@ LEGACY = {   # model -> (family, existing filename template in data/)
 }
 
 
-def fetch_model(model, date, cyc, level):
-    """Fetch one model's series for a cycle. Returns the npz path or None."""
+def series_max_step(path):
+    """Last forecast step stored in a series file (-1 if unknown)."""
+    try:
+        d = np.load(path, allow_pickle=True)
+        if "steps" in d:
+            return int(np.asarray(d["steps"]).max())
+    except Exception:
+        pass
+    return -1
+
+
+def fetch_model(model, date, cyc, level, max_step=None):
+    """Fetch one model's series for a cycle. Returns the npz path or None.
+
+    `max_step` is the horizon the archive has disseminated; when the stored
+    series stops short of it we fetch again (ECMWF fills the horizon in over
+    the hours after the initialisation).
+    """
     out = series_path(model, f"{date}{cyc}", level)
     if os.path.exists(out):
-        log(f"  {model}: cached")
-        return out
+        have = series_max_step(out)
+        if max_step is None or have >= max_step:
+            log(f"  {model}: cached (to {have}h)")
+            return out
+        log(f"  {model}: cached only to {have}h - refetching to {max_step}h")
+        try:
+            os.remove(out)
+        except OSError:
+            pass
     run = f"{date}{cyc}"
     fam, tmpl = LEGACY[model]
     famrun = f"{date}{cyc}00" if fam == "ecmwf" else f"{date}{cyc}"
@@ -197,13 +238,16 @@ def fetch_model(model, date, cyc, level):
         log(f"  {model}: seeded from data/")
         return out
     if model == "aifs-ens":
-        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level), OUT=out)
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level), OUT=out,
+                   MAX_STEP=str(max_step or 360))
         rc, so, se = sh([PY, os.path.join(HERE, "fetch_aifs.py")], env)
     elif model == "aifs-single":
-        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level), OUT=out)
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level), OUT=out,
+                   MAX_STEP=str(max_step or 360))
         rc, so, se = sh([PY, os.path.join(HERE, "fetch_aifs_single.py")], env)
     elif model in ("eps", "ifs"):
-        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level))
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level),
+                   MAX_STEP=str(max_step or 360))
         mode = "eps" if model == "eps" else "control"
         rc, so, se = sh([PY, os.path.join(HERE, "fetch_eps.py"), "--mode", mode], env)
         src = (f"eps_{run}00_u{level}.npz" if model == "eps" else f"ifs_ctl_{run}00_u{level}.npz")
@@ -312,10 +356,54 @@ def available_models(cycle, level):
             if os.path.exists(series_path(m, cycle, level))}
 
 
+def series_signature(cycle, level):
+    """(model, last step) for every model in the store.
+
+    The model SET alone does not tell you that a forecast horizon grew (ECMWF
+    fills the AIFS horizon in over the hours after the initialisation) - this
+    does, so the chart is re-rendered when the data actually got longer.
+    """
+    out = []
+    for m in models_for_cycle(cycle):
+        p = series_path(m, cycle, level)
+        if os.path.exists(p):
+            out.append((m, series_max_step(p)))
+    return tuple(sorted(out))
+
+
 def cycle_deadline(cycle):
     """9 h after the model initialisation = when we publish even if incomplete."""
     t0 = datetime.strptime(cycle, "%Y%m%d%H")
     return t0 + timedelta(hours=9)
+
+
+def cycle_is_complete(cyc, have_models):
+    """All the models this cycle's suite needs are in the store."""
+    want = set(models_for_cycle(cyc)) - set(EXTRA)
+    return want <= set(have_models(cyc))
+
+
+def pick_cycle(candidates, have_models, now=None):
+    """Which cycle to publish.
+
+    * the NEWEST cycle that is complete wins;
+    * a newer cycle that is still missing models does NOT hijack an older
+      complete cycle - we keep showing the complete one until the newer one is
+      ready (or its 9 h deadline passes, then it goes up flagged PARTIAL).
+    """
+    now = now or datetime.utcnow()
+    candidates = [c for c in candidates if c]
+    if not candidates:
+        return None, False
+    newest = max(candidates)
+    ready = [c for c in candidates if cycle_is_complete(c, have_models)]
+    if ready and max(ready) == newest:
+        return newest, True
+    if now >= cycle_deadline(newest):
+        return newest, False
+    if ready:
+        return max(ready), True
+    return newest, False
 
 
 def render_all(cycle, level, lat):
@@ -371,10 +459,11 @@ def _sync(level, lat, only, members, force):
     stf = os.path.join(STORE, "status.json")
     if os.path.exists(stf):
         status = json.load(open(stf))
-    ec_date, ec_cyc = resolve_ecmwf()
+    ec_date, ec_cyc, ec_horizon = resolve_ecmwf()
     gfs_date, gfs_cyc = resolve_ncep("noaa-gfs-bdp-pds", "gfs")
     gefs_date, gefs_cyc = resolve_ncep("noaa-gefs-pds", "gefs")
-    log(f"ECMWF newest complete: {ec_date} {ec_cyc}z | GFS: {gfs_date} {gfs_cyc}z | GEFS: {gefs_date} {gefs_cyc}z")
+    log(f"ECMWF newest: {ec_date} {ec_cyc}z (horizon {ec_horizon}h) | "
+        f"GFS: {gfs_date} {gfs_cyc}z | GEFS: {gefs_date} {gefs_cyc}z")
     cyc_ec = f"{ec_date}{ec_cyc}" if ec_date else None   # 10-digit YYYYMMDDHH
     cyc_gfs = f"{gfs_date}{gfs_cyc}" if gfs_date else None
     cyc_gefs = f"{gefs_date}{gefs_cyc}" if gefs_date else None
@@ -388,7 +477,7 @@ def _sync(level, lat, only, members, force):
                 continue
             if only and m not in only:
                 continue
-            fetch_model(m, ec_date, ec_cyc, level)
+            fetch_model(m, ec_date, ec_cyc, level, max_step=ec_horizon)
     # NCEP models
     if gfs_date:
         fetch_model("gfs", gfs_date, gfs_cyc, level)
@@ -407,24 +496,11 @@ def _sync(level, lat, only, members, force):
         return {m for m in models_for_cycle(cyc)
                 if os.path.exists(series_path(m, cyc, level))}
 
-    def complete(cyc):
-        want = set(models_for_cycle(cyc)) - set(EXTRA)
-        return want <= have_models(cyc)
-
-    if not candidates:
+    newest = max(candidates)
+    cycle, core_ok = pick_cycle(candidates, have_models)
+    if cycle is None:
         log("no cycles available")
         return
-    newest = max(candidates)
-    ready = [c for c in candidates if complete(c)]
-    if ready and max(ready) == newest:
-        cycle, core_ok = newest, True
-    elif datetime.utcnow() >= cycle_deadline(newest):
-        # the newest cycle missed its 9 h deadline -> publish it, flagged PARTIAL
-        cycle, core_ok = newest, False
-    elif ready:
-        cycle, core_ok = max(ready), True
-    else:
-        cycle, core_ok = newest, False
     have = available_models(cycle, level)
     wanted = models_for_cycle(cycle)
     past_deadline = datetime.utcnow() >= cycle_deadline(cycle)
@@ -432,7 +508,9 @@ def _sync(level, lat, only, members, force):
     st = json.load(open(stf)) if os.path.exists(stf) else {}
     rendered = st.get("rendered_models", {})
     prev = set(rendered.get(cycle, []))
-    changed = prev != have
+    prev_sig = tuple(tuple(x) for x in st.get("rendered_sig", {}).get(cycle, []))
+    sig = series_signature(cycle, level)
+    changed = (prev != have) or (prev_sig != sig)
 
     if not force and not changed and prev:
         log(f"cycle {cycle}: model set unchanged ({len(have)} models) - nothing to do")
@@ -452,6 +530,7 @@ def _sync(level, lat, only, members, force):
         outs = render_all(cycle, level, lat)
         rendered[cycle] = sorted(have)
         st["rendered_models"] = rendered
+        st.setdefault("rendered_sig", {})[cycle] = [list(x) for x in sig]
         st["rendered_cycle"] = cycle
         st["partial"] = not core_ok
         json.dump(st, open(stf, "w"), indent=2)

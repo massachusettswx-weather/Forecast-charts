@@ -51,11 +51,20 @@ def fetch(url, start=None, end=None, tries=5):
 
 
 def index_rows(step):
+    """Rows for u@10 hPa of one step; None if the archive has not published it."""
     p = f"{IDX}/aifs_single_{RUN}_{step}h.index"   # run-scoped: offsets differ per run
     if not os.path.exists(p) or os.path.getsize(p) == 0:
         tmp = p + ".part"
-        with open(tmp, "wb") as f:
-            f.write(fetch(f"{BASE}/{RUN}-{step}h-oper-fc.index"))
+        try:
+            with open(tmp, "wb") as f:
+                f.write(fetch(f"{BASE}/{RUN}-{step}h-oper-fc.index"))
+        except Exception as e:
+            print(f"  step {step}h: not published yet ({e})", flush=True)
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return None
         os.replace(tmp, p)
     rows = []
     with open(p) as f:
@@ -77,11 +86,14 @@ def decode(blob):
     return vals, lat
 
 
-STEPS = list(range(0, 361, 6))
+MAX_STEP = int(os.environ.get("MAX_STEP", "360"))
+STEPS = list(range(0, MAX_STEP + 1, 6))
 
 
 def work(step):
     rows = index_rows(step)
+    if not rows:
+        return None
     r = rows[0]
     blob = fetch(f"{BASE}/{RUN}-{step}h-oper-fc.grib2", r["_offset"], r["_offset"] + r["_length"] - 1)
     vals, lat = decode(blob)
@@ -97,10 +109,13 @@ res = []
 t0 = time.time()
 with ThreadPoolExecutor(max_workers=10) as ex:
     for k, out in enumerate(ex.map(work, STEPS)):
-        res.append(out)
+        if out is not None:
+            res.append(out)
         if (k + 1) % 15 == 0:
             print(f"  {k+1}/{len(STEPS)} {time.time()-t0:.0f}s", flush=True)
 
+if not res:
+    raise SystemExit(f"no AIFS Single steps published for {RUN} yet")
 res.sort(key=lambda x: x[0])
 steps = np.array([r[0] for r in res])
 u60 = np.array([r[1] for r in res])

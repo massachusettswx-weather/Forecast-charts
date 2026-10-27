@@ -53,6 +53,9 @@ deploy: key
 check:
 	$(PY) scripts/check_site.py --online
 
+test:
+	$(PY) scripts/test_cycles.py
+
 status:
 	$(PY) scripts/pipeline.py list
 

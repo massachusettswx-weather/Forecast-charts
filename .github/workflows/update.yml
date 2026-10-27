@@ -80,6 +80,9 @@ jobs:
           key: series-${{ github.run_id }}
           restore-keys: series-
 
+      - name: Cycle logic regression tests
+        run: python scripts/test_cycles.py
+
       - name: Sync runs and render charts
         continue-on-error: true
         run: |

@@ -78,8 +78,16 @@ def index_entry(bucket, key, cache, level=10):
     byte field is the CUMULATIVE offset of each message start."""
     if not os.path.exists(cache) or os.path.getsize(cache) == 0:
         tmp = cache + ".part"
-        with open(tmp, "wb") as f:
-            f.write(get(s3(bucket, key) + ".idx"))
+        try:
+            with open(tmp, "wb") as f:
+                f.write(get(s3(bucket, key) + ".idx"))
+        except Exception as e:
+            print(f"  step {key}: not published yet ({e})", flush=True)
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return None
         os.replace(tmp, cache)
     lines = [l for l in open(cache, errors="ignore").read().split("\n") if l.strip()]
     want = f":UGRD:{level} mb:"
@@ -127,7 +135,10 @@ def main():
     def work(step):
         key = pat.format(d=a.date, c=cyc, step=step)
         cache = f"{IDX}/{a.product}_{a.date}{cyc}_{step}.idx"
-        off, ln = index_entry(bucket, key, cache)
+        entry = index_entry(bucket, key, cache)
+        if entry is None:
+            return None                  # step not disseminated yet
+        off, ln = entry
         blob = get(s3(bucket, key), off, off + ln - 1)
         u60, nhm, lat = decode(blob)
         return step, u60, nhm
@@ -141,17 +152,25 @@ def main():
             st, m = job
             key = pat.format(d=a.date, c=cyc, step=st, MM=m)
             cache = f"{IDX}/gefs_m{m:02d}_{a.date}{cyc}_{st}.idx"
-            off, ln = index_entry(bucket, key, cache)
+            entry = index_entry(bucket, key, cache)
+            if entry is None:
+                return None
+            off, ln = entry
             blob = get(s3(bucket, key), off, off + ln - 1)
             u60, nhm, lat = decode(blob)
             return st, m, u60, nhm, lat.astype(np.float32)
 
         for si, st in enumerate(steps):
             with ThreadPoolExecutor(max_workers=4) as ex:
-                for st_, m, u60, nhm, lat in ex.map(work_member, [(st, m) for m in range(1, 31)]):
+                for r in ex.map(work_member, [(st, m) for m in range(1, 31)]):
+                    if r is None:
+                        continue
+                    st_, m, u60, nhm, lat = r
                     out_prof.setdefault(st_, {})[m] = (u60, nhm, lat)
             if (si + 1) % 10 == 0:
                 print(f"  step {si+1}/{len(steps)} {time.time()-t0:.0f}s", flush=True)
+        if not out_prof:
+            raise SystemExit(f"no {a.product} steps published for {a.date} {cyc}z yet")
         steps_sorted = sorted(out_prof)
         prof = np.array([[out_prof[st][m][2] for m in range(1, 31)] for st in steps_sorted],
                         dtype=np.float32)
@@ -169,13 +188,17 @@ def main():
             pass
         for f, s in futs.items():
             try:
-                res.append(f.result())
+                r = f.result()
             except Exception as e:
                 err = e
                 break
+            if r is not None:
+                res.append(r)
     if err:
         print("FAILED:", err, flush=True)
         sys.exit(1)
+    if not res:
+        raise SystemExit(f"no {a.product} steps published for {a.date} {cyc}z yet")
     res.sort(key=lambda x: x[0])
     np.savez_compressed(out,
                         steps=np.array([r[0] for r in res]),

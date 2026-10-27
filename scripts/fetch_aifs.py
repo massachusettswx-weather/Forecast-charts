@@ -33,7 +33,8 @@ DATA = os.environ.get("DATA_DIR", os.path.join(ROOT, "data"))
 BASE = (f"https://data.ecmwf.int/forecasts/{RUN_DATE}/{CYCLE[:2]}z"
         f"/aifs-ens/0p25/enfo")
 RUN = f"{RUN_DATE}{CYCLE}00"
-STEPS = list(range(0, 361, 6))
+MAX_STEP = int(os.environ.get("MAX_STEP", "360"))
+STEPS = list(range(0, MAX_STEP + 1, 6))
 IDX_DIR = os.path.join(DATA, "idx")
 PARAM = "u"
 LEVEL = os.environ.get("LEVEL", "100")
@@ -71,13 +72,26 @@ def fetch(url, start=None, end=None, tries=6):
 
 
 def index_rows(step, typ):
-    """Return index rows for u @ 100 hPa from the .index file of one step/stream."""
+    """Return index rows for u @ 100 hPa from the .index file of one step/stream.
+
+    Returns None when the archive has not published that step yet - the cycle is
+    then published with the steps that ARE disseminated (ECMWF fills the rest in
+    over the following hours).
+    """
     p = f"{IDX_DIR}/{RUN}-{step}h-enfo-{typ}.index"
     if not os.path.exists(p):
         url = f"{BASE}/{RUN}-{step}h-enfo-{typ}.index"
         tmp = p + ".part"
-        with open(tmp, "wb") as f:
-            f.write(fetch(url))
+        try:
+            with open(tmp, "wb") as f:
+                f.write(fetch(url))
+        except Exception as e:
+            print(f"  step {step}h {typ}: not published yet ({e})", flush=True)
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return None
         os.replace(tmp, p)
     rows = []
     with open(p) as f:
@@ -124,31 +138,34 @@ def main():
     t0 = time.time()
     print("building task list ...", flush=True)
     tasks = []
+    steps_ok = []
     for step in STEPS:
-        for typ in ("cf", "pf"):
-            rows = index_rows(step, typ)
-            if typ == "cf":
-                assert len(rows) == 1, (step, len(rows))
-                r = rows[0]
-                url = f"{BASE}/{RUN}-{step}h-enfo-cf.grib2"
-                tasks.append((step, 0, url, r["_offset"], r["_length"]))
-            else:
-                nums = sorted(int(r["number"]) for r in rows)
-                assert nums == list(range(1, 51)), (step, nums[:5], len(nums))
-                url = f"{BASE}/{RUN}-{step}h-enfo-pf.grib2"
-                for r in rows:
-                    tasks.append((step, int(r["number"]), url, r["_offset"], r["_length"]))
-    print(f"{len(tasks)} messages queued ({len(STEPS)} steps x 51 members)", flush=True)
+        rows_cf = index_rows(step, "cf")
+        rows_pf = index_rows(step, "pf")
+        if not rows_cf or not rows_pf:
+            continue                      # step not disseminated yet
+        steps_ok.append(step)
+        r = rows_cf[0]
+        url = f"{BASE}/{RUN}-{step}h-enfo-cf.grib2"
+        tasks.append((step, 0, url, r["_offset"], r["_length"]))
+        rows_pf = [r for r in rows_pf if "number" in r]
+        url = f"{BASE}/{RUN}-{step}h-enfo-pf.grib2"
+        for r in rows_pf:
+            tasks.append((step, int(r["number"]), url, r["_offset"], r["_length"]))
+    if not tasks:
+        raise SystemExit(f"no AIFS ENS steps published for {RUN} yet")
+    print(f"{len(tasks)} messages queued ({len(steps_ok)}/{len(STEPS)} steps disseminated)",
+          flush=True)
 
-    nstep, nmem = len(STEPS), 51
+    nstep, nmem = len(steps_ok), 51
     gmean = np.full((nstep, nmem), np.nan)
     zonal = np.full((nstep, nmem, 721), np.nan)
     lat1d = None
     done = 0
     with ThreadPoolExecutor(max_workers=WORKERS) as ex:
         for step, mem, gm, zo in ex.map(task, tasks):
-            gmean[STEPS.index(step), mem] = gm
-            zonal[STEPS.index(step), mem, :] = zo
+            gmean[steps_ok.index(step), mem] = gm
+            zonal[steps_ok.index(step), mem, :] = zo
             if lat1d is None:
                 lat1d = zo  # placeholder, fixed below
             done += 1
@@ -157,12 +174,13 @@ def main():
                 print(f"  {done}/{len(tasks)}  {el:6.1f}s  eta {el/done*(len(tasks)-done):6.1f}s", flush=True)
 
     # latitudes from one authoritative decode
-    row = index_rows(0, "cf")[0]
-    blob = fetch(f"{BASE}/{RUN}-0h-enfo-cf.grib2", row["_offset"], row["_offset"] + row["_length"] - 1)
+    row = index_rows(steps_ok[0], "cf")[0]
+    blob = fetch(f"{BASE}/{RUN}-{steps_ok[0]}h-enfo-cf.grib2", row["_offset"],
+                 row["_offset"] + row["_length"] - 1)
     _, _, lat1d = decode_u(blob)
     np.savez_compressed(
         OUT_NPZ,
-        steps=np.array(STEPS),
+        steps=np.array(steps_ok),
         members=np.arange(nmem),
         gmean=gmean,
         zonal=zonal,

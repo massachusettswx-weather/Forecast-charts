@@ -59,10 +59,20 @@ def get(url, start=None, end=None, tries=5):
 
 
 def index_rows(url, cache):
+    """Rows of one step's index file; None when the archive has not published
+    that step yet (the cycle is then published with the steps that ARE out)."""
     if not os.path.exists(cache) or os.path.getsize(cache) == 0:
         tmp = cache + ".part"
-        with open(tmp, "wb") as f:
-            f.write(get(url))
+        try:
+            with open(tmp, "wb") as f:
+                f.write(get(url))
+        except Exception as e:
+            print(f"  step not published yet: {url.split('/')[-1]} ({e})", flush=True)
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return None
         os.replace(tmp, cache)
     rows = []
     with open(cache) as f:
@@ -90,16 +100,22 @@ def decode(blob):
             z.astype(np.float32), lat.astype(np.float32))
 
 
-STEPS = list(range(0, 361, 6))
+MAX_STEP = int(os.environ.get("MAX_STEP", "360"))
+STEPS = list(range(0, MAX_STEP + 1, 6))
 
 
 def work_ef(step):
     """50 EPS perturbed members -> (step, mean_u60, mean_nh, n_members)"""
     url = f"{BASE}/enfo/{RUN}-{step}h-enfo-ef.grib2"
     cache = f"{IDX}/eps_ef_{RUN}_{step}h.index"
-    rows = [r for r in index_rows(url.replace(".grib2", ".index"), cache)
+    rows = index_rows(url.replace(".grib2", ".index"), cache)
+    if rows is None:
+        return None
+    rows = [r for r in rows
             if r.get("param") == "u" and r.get("levtype") == "pl"
             and str(r.get("levelist")) == LEVEL and r.get("type") == "pf"]
+    if not rows:
+        return None
     u60s, nhs, profs = [], [], []
     for r in rows:
         blob = get(url, r["_offset"], r["_offset"] + r["_length"] - 1)
@@ -113,9 +129,14 @@ def work_oper(step):
     """IFS control (= EPS control member)"""
     url = f"{BASE}/oper/{RUN}-{step}h-oper-fc.grib2"
     cache = f"{IDX}/ifs_oper_{RUN}_{step}h.index"
-    rows = [r for r in index_rows(url.replace(".grib2", ".index"), cache)
+    rows = index_rows(url.replace(".grib2", ".index"), cache)
+    if rows is None:
+        return None
+    rows = [r for r in rows
             if r.get("param") == "u" and r.get("levtype") == "pl"
             and str(r.get("levelist")) == LEVEL]
+    if not rows:
+        return None
     r = rows[0]
     blob = get(url, r["_offset"], r["_offset"] + r["_length"] - 1)
     a, b, prof, lat = decode(blob)
@@ -135,7 +156,8 @@ if __name__ == "__main__":
     if args.mode in ("both", "control"):
         with ThreadPoolExecutor(max_workers=8) as ex:
             for r in ex.map(work_oper, STEPS):
-                ctl.append(r)
+                if r is not None:
+                    ctl.append(r)
     if ctl:
         ctl.sort()
         np.savez_compressed(out_ctl, steps=np.array([r[0] for r in ctl]),
@@ -146,7 +168,8 @@ if __name__ == "__main__":
     if args.mode in ("both", "eps"):
       with ThreadPoolExecutor(max_workers=6) as ex:
         for k, r in enumerate(ex.map(work_ef, STEPS)):
-            eps.append(r)
+            if r is not None:
+                eps.append(r)
             if (k + 1) % 10 == 0:
                 print(f"  EPS {k+1}/{len(STEPS)} {time.time()-t0:.0f}s", flush=True)
     eps.sort()
