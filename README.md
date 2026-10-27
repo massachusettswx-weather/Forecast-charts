@@ -19,8 +19,9 @@ bold ensemble mean and control on top.*
 | **Hybrid** | every model on one graph — physics and AI together |
 | **Ensembles** | member spaghetti for each ensemble, with mean + control |
 
-Refreshed **four times daily** at 02, 08, 14 and 20 UTC — two hours after each
-six-hourly suite is disseminated (00Z → 08Z, 06Z → 14Z, 12Z → 20Z, 18Z → 02Z).
+Refreshed **four times daily** at 03, 09, 15 and 21 UTC — nine hours after each
+model initialisation, i.e. three hours after the next cycle's analysis
+(00Z init → 09Z, 06Z → 15Z, 12Z → 21Z, 18Z → 03Z).
 
 ---
 
