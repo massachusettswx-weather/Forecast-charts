@@ -43,7 +43,19 @@ make venv          # virtualenv + deps
 make sync          # fetch the newest cycle, render all four tabs
 make serve         # http://localhost:8000  (JSON API included)
 make site          # static build into site_out/  (for GitHub Pages)
+make key           # restore the GitHub deploy key (after a sandbox home reset)
+make deploy        # restore the key + push -> the runner redeploys the site
+make check         # production health check: store + deployed site
+make status        # what the store currently holds
 ```
+
+**`make check` is the guard rail.** It verifies the four tab figures exist, that
+the cycle label shows the cycle *hour* (`18z 26 Oct 2026`, not the day), that
+the climatology behind the charts is 10 hPa and not 100 hPa, that the 06z/18z
+cycles carry no ECMWF IFS/EPS, and that the published cycle is not stale. The
+same script runs as a **hard gate in the deploy workflow** — a broken render
+fails the build instead of shipping. `docs/STATUS.md` is the hand-off note
+(where the project is, what broke last, what to do next).
 
 or without make:
 

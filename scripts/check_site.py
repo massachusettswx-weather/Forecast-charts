@@ -117,7 +117,7 @@ def main():
         if ec_date:
             newest = f"{ec_date}{ec_cyc}"
             gap = (int(newest[8:10]) - int(cycle[8:10])) % 24
-            if newest[:6] == cycle[:6]:                 # same day
+            if newest[:8] == cycle[:8]:                # same calendar day
                 check(gap <= 6,
                       f"published cycle is current (newest published by ECMWF: {newest}z)",
                       f"STALE: newest ECMWF cycle is {newest}z, the site still shows {cycle}z")
