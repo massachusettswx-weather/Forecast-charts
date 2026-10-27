@@ -65,14 +65,18 @@ def domain_label(domain):
     return _spec(domain)["label"]
 
 
-def load_clim(level, domain, t0, t1):
+def clim_kwargs(domain):
+    """The ERA5 query arguments for a domain (lat / NH / latitude band)."""
     spec = _spec(domain)
     if spec["kind"] == "lat":
-        kw = {"lat": spec["lat"]}
-    elif spec["kind"] == "nh":
-        kw = {"lat": None}
-    else:
-        kw = {"lat_range": spec["range"]}
+        return {"lat": spec["lat"]}
+    if spec["kind"] == "nh":
+        return {"lat": None}
+    return {"lat_range": spec["range"]}
+
+
+def load_clim(level, domain, t0, t1):
+    kw = clim_kwargs(domain)
     mean, std, _ = EC.climatology(level,
                                   start=f"{t0.month:02d}-{t0.day:02d}",
                                   end=f"{t1.month:02d}-{t1.day:02d}", **kw)
@@ -314,6 +318,17 @@ def render_ssw(S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
              f"{cycle_label(cycle)}   •   ERA5 1991–2020 climatology   •   "
              f"criterion: u < 0 m/s for {SSW_MIN_HOURS} h or more",
              ha="left", va="top", fontsize=10.5, color="#333333")
+    # context: the lowest daily value in the ERA5 record for this domain
+    try:
+        rv, rd = EC.record_min(level, years=range(1991, 2021),
+                               start="10-01", end="12-31", **clim_kwargs(lat))
+        ax.text(0.995, 0.975,
+                f"ERA5 record min (1991-2020): {rv:.1f} m/s on {rd}",
+                transform=ax.transAxes, ha="right", va="top", fontsize=10.5,
+                fontweight="bold", color="#111111",
+                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#999999", lw=0.8))
+    except Exception as e:                        # no cache here: skip the box
+        print(f"  (record min unavailable: {e})")
     fig.text(0.5, 0.012, "Valid Days", ha="center", va="bottom", fontsize=12.5, color="#111111")
     fig.text(0.988, 0.010, "@Massachusettswx", ha="right", va="bottom",
              fontsize=12.5, fontweight="bold", color="#111111")
