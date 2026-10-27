@@ -35,10 +35,8 @@ wakes 4× a day for ~10 minutes.
 4. **Settings → Actions → General → Workflow permissions: `Read and write`**
    (the workflow commits the refreshed figures back to the repo).
 
-5. That is it. `.github/workflows/update.yml` runs on the cron
-   `0 2,8,14,20 * * *` (UTC) — eight hours after each initialisation, i.e. two
-   hours after each suite is disseminated — and publishes the site to
-   `https://<you>.github.io/<repo>/`.
+5. That is it. `.github/workflows/update.yml` polls every 15 minutes and
+   publishes the site to `https://<you>.github.io/<repo>/`.
 
    You can also trigger it on demand: **Actions → update-forecast-charts →
    Run workflow**.
@@ -52,9 +50,25 @@ wakes 4× a day for ~10 minutes.
 mkdir -p /root/.ssh && chmod 700 /root/.ssh
 cp -n /workspace/.home/.ssh/github_deploy* /root/.ssh/
 chmod 600 /root/.ssh/github_deploy
+cat > /root/.ssh/config <<'EOF'
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile /root/.ssh/github_deploy
+  IdentitiesOnly yes
+  StrictHostKeyChecking accept-new
+EOF
+chmod 600 /root/.ssh/config
 ```
 
-(The public key stays registered on GitHub, so nothing needs re-adding there.)
+(If the *key itself* was lost, generate a new one and add the public key in the
+repo's **Settings → Deploy keys → Add deploy key** with *Allow write access*
+ticked:
+
+```bash
+ssh-keygen -t ed25519 -C "sandbox-deploy" -f /workspace/.home/.ssh/github_deploy -N ""
+cat /workspace/.home/.ssh/github_deploy.pub
+```)
 
 > **US DST note:** the cron is UTC, so it never changes. Only the local clock
 > reading does: DST ends **Sun 1 Nov 2026** (02:00 EDT -> 01:00 EST), after

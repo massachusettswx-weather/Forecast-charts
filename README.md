@@ -20,18 +20,19 @@ bold ensemble mean and control on top.*
 | **Ensembles** | member spaghetti for each ensemble, with mean + control |
 
 **Which models appear depends on the cycle:** the **06z and 18z suites carry no
-ECMWF control (IFS) and no ECMWF EPS** — those products publish late and aren't
-part of those cycles — so those charts show AIFS + GFS/GEFS only. The 00z and
-12z suites include the ECMWF control and EPS. Chart titles and legends are built
-from the models actually present, so they never advertise a system that isn't
-plotted.
+ECMWF control (IFS) and no ECMWF EPS** — ECMWF publishes those two products in
+those runs only out to **144 h**, while the 00z/12z suites go to 240 h — so those
+charts show AIFS + GFS/GEFS only and a 15-day chart never stops early. The 00z
+and 12z suites include the ECMWF control and EPS. Chart titles, legends **and the
+model table** are built from the models actually present, so they never
+advertise a system that isn't plotted.
 
-Refreshed **four times daily** at 03, 09, 15 and 21 UTC — nine hours after each
-model initialisation, i.e. three hours after the next cycle's analysis
-(00Z init → 09Z, 06Z → 15Z, 12Z → 21Z, 18Z → 03Z). The cron is UTC and never
-changes; after US DST ends on **1 Nov 2026** these simply read one hour later
-in local terms (03Z = 10pm EST instead of 11pm EDT). Everything on the site is
-labelled UTC.
+Refreshed by a **15-minute poll** plus a deadline sweep at 03, 09, 15 and 21 UTC —
+nine hours after each model initialisation, i.e. three hours after the next
+cycle's analysis (00Z init → 09Z, 06Z → 15Z, 12Z → 21Z, 18Z → 03Z). The cron is
+UTC and never changes; after US DST ends on **1 Nov 2026** these simply read one
+hour later in local terms (03Z = 10pm EST instead of 11pm EDT). Everything on the
+site is labelled UTC.
 
 ---
 
@@ -75,7 +76,7 @@ GFS, GEFS mean + control) has landed; if something is still missing at the
 schedule remains as the deadline sweep and backstop.
 
 ```
-every 4 h (02/08/14/20 UTC)
+every 15 min  (+ 03/09/15/21 UTC deadline sweep)
    └─ resolve the newest published cycle   (ECMWF + NCEP, by direct probing)
    └─ fetch only the series that are missing
         └─ raw GRIB2 -> HTTP Range request for the u@10 hPa message only
@@ -87,7 +88,11 @@ every 4 h (02/08/14/20 UTC)
 
 The ERA5 climatology is cached locally (`data/era5_cache/`, 1991–2020, daily
 12Z, **all 37 pressure levels**), so the climatology side of any figure is an
-instant lookup and never touches the network again.
+instant lookup and never touches the network again. The repo carries a slim
+copy of it (`data/era5_cache_slim/`, levels 1/3/10/30/50/100/250) for the
+GitHub Actions runner — `era5_cache.py` maps the level through
+`level_index.npy`, so the runner asks for the same level as the build machine
+(10 hPa, not 100 hPa).
 
 ## Data sources
 
@@ -109,7 +114,8 @@ scripts/
   pipeline.py        run store + sync + render  (the entry point)
   render.py          the four tabs, house style
   build_site.py      static build for GitHub Pages
-  era5_cache.py      ERA5 climatology cache (build / query / extend)
+  era5_cache.py      ERA5 climatology cache (build / query / extend, slim-aware)
+  site_meta.py       shared model metadata for the two front ends
   fetch_aifs.py      ECMWF AIFS ENS   (raw GRIB2, range-fetched)
   fetch_aifs_single.py  ECMWF AIFS Single
   fetch_eps.py       ECMWF EPS members + IFS control

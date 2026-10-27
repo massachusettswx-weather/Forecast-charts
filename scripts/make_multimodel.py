@@ -26,7 +26,9 @@ from matplotlib.ticker import FixedLocator, MultipleLocator
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import era5_cache as EC
 
-OUT_DIR = "/workspace/output"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.environ.get("DATA_DIR", os.path.join(ROOT, "data"))
+OUT_DIR = os.path.join(ROOT, "output")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 C_MEAN, C_CTL, C_CLIM, C_SINGLE = "#ff6b6b", "#8b1a1a", "#000000", "#6a0dad"
@@ -35,13 +37,13 @@ C_EPS_MEAN, C_IFS_CTL = "#1f77b4", "#08306b"
 
 
 def load_aifs(date, cyc, level):
-    e = np.load(f"/workspace/data/aifs_{date}{cyc}_u{level}.npz", allow_pickle=True)
-    s = np.load(f"/workspace/data/aifs_single_{date}{cyc}_u{level}.npz", allow_pickle=True)
+    e = np.load(os.path.join(DATA, f"aifs_{date}{cyc}_u{level}.npz"), allow_pickle=True)
+    s = np.load(os.path.join(DATA, f"aifs_single_{date}{cyc}_u{level}.npz"), allow_pickle=True)
     return e, s
 
 
 def noaa(name, date, cyc):
-    p = f"/workspace/data/{name}_{date}{cyc}.npz"
+    p = os.path.join(DATA, f"{name}_{date}{cyc}.npz")
     return np.load(p, allow_pickle=True) if os.path.exists(p) else None
 
 
@@ -74,8 +76,11 @@ def main():
 
     def _npz(path):
         return np.load(path, allow_pickle=True) if os.path.exists(path) else None
-    eps = _npz(f"/workspace/data/eps_{a.date}{cyc}_u{a.level}.npz")
-    ifs_ctl = _npz(f"/workspace/data/ifs_ctl_{a.date}{cyc}_u{a.level}.npz")
+    # ECMWF publishes the 06z/18z control and EPS only out to 144 h, so those
+    # runs are left off the chart entirely (same rule as the site).
+    ecmwf_ops = cyc2 not in ("06", "18")
+    eps = _npz(os.path.join(DATA, f"eps_{a.date}{cyc}_u{a.level}.npz")) if ecmwf_ops else None
+    ifs_ctl = _npz(os.path.join(DATA, f"ifs_ctl_{a.date}{cyc}_u{a.level}.npz")) if ecmwf_ops else None
     gefs_mean = series(noaa("gefs_mean", a.date, cyc2))
     gefs_ctl = series(noaa("gefs_ctl", a.date, cyc2))
     gfs_det = series(noaa("gfs_ctl", a.date, cyc2))
@@ -124,40 +129,40 @@ def main():
 
     ax.plot(aifs_t[::STEP], aifs_mean[::STEP], color=C_MEAN, lw=3.0, marker="o", markersize=4.6,
             markerfacecolor=C_MEAN, markeredgecolor="#8b1a1a", markeredgewidth=0.9, zorder=8,
-            label="ECMWF AIFS ENS mean (51)")
+            label=f"ECMWF AIFS ENS {cyc2}z mean (51)")
     ax.plot(aifs_t[::STEP], aifs_ctl[::STEP], color=C_CTL, lw=3.4, ls="-", marker="o",
             markersize=4.6, markerfacecolor=C_CTL, markeredgecolor="#4a0d0d", markeredgewidth=0.9,
-            zorder=7, label="ECMWF AIFS ENS control (cf)")
+            zorder=7, label=f"ECMWF AIFS ENS {cyc2}z control (cf)")
     ax.plot(aifs_t[::STEP], aifs_sing[::STEP], color=C_SINGLE, lw=2.2, marker="o", markersize=4.6,
             markerfacecolor=C_SINGLE, markeredgecolor="#3d0864", markeredgewidth=0.9, zorder=9,
-            label="ECMWF AIFS Single")
+            label=f"ECMWF AIFS Single {cyc2}z")
 
     if eps is not None:
         te = t_of(eps["steps"])
         ax.plot(te[::STEP], eps["u60"][::STEP], color=C_EPS_MEAN, lw=2.8, marker="D",
                 markersize=4.2, markerfacecolor=C_EPS_MEAN, markeredgecolor="#08346b",
-                markeredgewidth=0.9, zorder=8, label="ECMWF EPS 12z ens mean (50 members)")
+                markeredgewidth=0.9, zorder=8, label=f"ECMWF EPS {cyc2}z ens mean (50 members)")
     if ifs_ctl is not None:
         ti = t_of(ifs_ctl["steps"])
         ax.plot(ti[::STEP], ifs_ctl["u60"][::STEP], color=C_IFS_CTL, lw=2.6, marker="D",
                 markersize=4.2, markerfacecolor=C_IFS_CTL, markeredgecolor="#04173a",
-                markeredgewidth=0.9, zorder=7, label="ECMWF IFS 12z control (EPS ctl)")
+                markeredgewidth=0.9, zorder=7, label=f"ECMWF IFS {cyc2}z control (EPS ctl)")
     if gefs_mean is not None:
         t = t_of(gefs_mean[0])
         c = clim_at(t); cs = sd_at(t)
         ax.plot(t[::STEP], gefs_mean[1][::STEP], color=C_GFS_MEAN, lw=2.8, marker="s", markersize=4.2,
                 markerfacecolor=C_GFS_MEAN, markeredgecolor="#0b3d1c", markeredgewidth=0.9, zorder=8,
-                label="NOAA GEFS 12z mean")
+                label=f"NOAA GEFS {cyc2}z mean")
     if gefs_ctl is not None:
         t = t_of(gefs_ctl[0])
         ax.plot(t[::STEP], gefs_ctl[1][::STEP], color=C_GFS_CTL, lw=2.6, ls="-", marker="s",
                 markersize=4.2, markerfacecolor=C_GFS_CTL, markeredgecolor="#072b13",
-                markeredgewidth=0.9, zorder=7, label="NOAA GEFS 12z control (gec00)")
+                markeredgewidth=0.9, zorder=7, label=f"NOAA GEFS {cyc2}z control (gec00)")
     if gfs_det is not None:
         t = t_of(gfs_det[0])
         ax.plot(t[::STEP], gfs_det[1][::STEP], color=C_GFS_DET, lw=2.4, ls="-", marker="^",
                 markersize=4.4, markerfacecolor=C_GFS_DET, markeredgecolor="#06414f",
-                markeredgewidth=0.9, zorder=7, label="NOAA GFS 12z (deterministic)")
+                markeredgewidth=0.9, zorder=7, label=f"NOAA GFS {cyc2}z (deterministic)")
 
     ax.axhline(0.0, color="#000000", lw=2.0, zorder=5)
     ax.set_xlim(allv.min().normalize(), allv.max() + pd.Timedelta(hours=6))
@@ -179,7 +184,11 @@ def main():
     ax.set_xlabel("")
 
     dom = f"{a.lat:.0f}\u02daN"
-    title = f"ECMWF AIFS ENS + EPS 0.25\u00b0  \u2022  NOAA GFS + GEFS  {dom} Zonal Mean Zonal Wind"
+    bits = ["ECMWF AIFS ENS 0.25\u00b0"]
+    if eps is not None or ifs_ctl is not None:
+        bits.append("EPS")
+    bits.append("NOAA GFS + GEFS")
+    title = f"{' + '.join(bits)}  {dom} Zonal Mean Zonal Wind"
     t = fig.suptitle(title, x=0.075, ha="left", fontsize=16.5, fontweight="bold", y=0.972)
     fig.canvas.draw()
     w = t.get_window_extent(fig.canvas.get_renderer()).width

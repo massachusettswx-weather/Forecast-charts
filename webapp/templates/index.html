@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stratosphere zonal wind — 60˚N @ 10 hPa</title>
-<meta name="description" content="Automated 60N zonal-mean zonal wind at 10 hPa from ECMWF AIFS/IFS/EPS and NOAA GFS/GEFS against the ERA5 1991-2020 climatology. Updated 4x daily.">
+<meta name="description" content="Automated 60N zonal-mean zonal wind at 10 hPa from ECMWF AIFS/IFS/EPS and NOAA GFS/GEFS against the ERA5 1991-2020 climatology. Refreshed every 15 minutes.">
 <style>
   :root { --ink:#14171a; --mut:#5b6670; --line:#e3e7ea; --bg:#f6f7f8; --card:#fff; }
   * { box-sizing:border-box; }
@@ -93,21 +93,25 @@
   {% endfor %}
 
   <h2>Models on this chart</h2>
+  <p class="blurb" id="modelnote">{{ model_note }}</p>
   <table class="models">
     <tr><th>Model</th><th>Type</th><th>Tab</th><th>Source</th></tr>
-    {% for key, m in models.items() %}
+    <tbody id="modelrows">
+    {% for m in models %}
     <tr><td><b>{{ m.label }}</b></td>
-        <td>{{ 'AI' if m.family == 'ai' else ('Physics' if m.family == 'physics' else 'Ensemble members') }}</td>
+        <td>{{ m.kind }}</td>
         <td>{{ m.tab }}</td>
-        <td>{{ sources.get(key, '') }}</td></tr>
+        <td>{{ m.source }}</td></tr>
     {% endfor %}
+    </tbody>
   </table>
 
   <h2>About the data</h2>
   <div class="grid">
     <div class="card"><h3>Forecast models</h3><p>ECMWF open data (AIFS ENS 51 members, AIFS Single, IFS control, EPS 50 perturbed members) and NOAA open data (GFS deterministic, GEFS mean + control + 30 perturbed members). Raw GRIB2 is fetched straight from the archives; only the u&nbsp;@&nbsp;10&nbsp;hPa message is downloaded, using the published index files.</p></div>
     <div class="card"><h3>Climatology</h3><p>ERA5 1991–2020 reanalysis, zonal-mean u at 60˚N, daily 12&nbsp;Z, with ±1σ and ±2σ across the 30 years. Cached locally, so every level and latitude is an instant lookup.</p></div>
-    <div class="card"><h3>How it updates</h3><p>A watcher runs four times daily at 02, 08, 14 and 20&nbsp;UTC — two hours after each six-hourly suite is disseminated. It resolves the newest published cycle, fetches only what is missing, and re-renders these charts.</p></div>
+    <div class="card"><h3>How it updates</h3><p>The watcher polls every 15&nbsp;minutes and publishes a cycle as soon as every model for it has landed; a deadline sweep at 03, 09, 15 and 21&nbsp;UTC (9&nbsp;h after each initialisation) guarantees a rebuild even if a poll was delayed. It resolves the newest published cycle, fetches only what is missing, and re-renders these charts.</p></div>
+    <div class="card"><h3>06z and 18z cycles</h3><p>ECMWF publishes the IFS control and the EPS only out to 144&nbsp;h in the 06z and 18z runs, so those two models are left off the charts for those cycles. AIFS, GFS and GEFS run the full 15–16&nbsp;days and are shown in full.</p></div>
   </div>
 </main>
 
@@ -125,13 +129,28 @@
   }));
 
   const CYCLES = {{ cycles_json | safe }};
+  const MODELS_BY_CYCLE = {{ models_by_cycle_json | safe }};
+  const CURRENT_CYCLE = {{ cycle | tojson }};
   const pick = document.getElementById('cyclepick');
+  function renderModels(c) {
+    const entry = MODELS_BY_CYCLE[c] || {rows: [], note: ''};
+    const tbody = document.getElementById('modelrows');
+    if (tbody) {
+      tbody.innerHTML = entry.rows.map(m =>
+        '<tr><td><b>' + m.label + '</b></td><td>' + m.kind + '</td><td>' +
+        m.tab + '</td><td>' + m.source + '</td></tr>').join('');
+    }
+    const note = document.getElementById('modelnote');
+    if (note) note.textContent = entry.note || '';
+  }
+  renderModels(CURRENT_CYCLE);
   if (pick) pick.addEventListener('change', () => {
     const c = CYCLES[pick.value] || {};
     panels.forEach(p => {
       const img = document.getElementById('img-' + p.dataset.key);
       if (img && c[p.dataset.key]) img.src = 'fig/' + c[p.dataset.key];
     });
+    renderModels(pick.value);
   });
 </script>
 </body>

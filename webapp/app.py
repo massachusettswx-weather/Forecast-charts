@@ -13,6 +13,7 @@ Routes
 """
 import json
 import os
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -27,19 +28,11 @@ ROOT = os.path.dirname(HERE)
 STORE = os.path.join(ROOT, "data", "store")
 FIGDIR = os.path.join(STORE, "figures")
 SELDIR = os.path.join(STORE, "series")
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
+import site_meta
 
 app = FastAPI(title="Stratosphere forecast charts", docs_url="/api/docs")
 templates = Jinja2Templates(directory=os.path.join(HERE, "templates"))
-
-SOURCES = {
-    "aifs-single": "ECMWF open data (0.25°)",
-    "aifs-ens": "ECMWF open data (0.25°)",
-    "ifs": "ECMWF open data (0.25°)",
-    "eps": "ECMWF open data (0.25°)",
-    "gfs": "NOAA open data (0.25°)",
-    "gefs": "NOAA open data (0.5°)",
-    "gefs_members": "NOAA open data (0.5°)",
-}
 
 TABS = [("physics", "Physics-based", "ECMWF IFS + EPS, NOAA GFS + GEFS"),
         ("ai", "AI", "ECMWF AIFS Single + AIFS ENS"),
@@ -96,11 +89,13 @@ def index(request: Request):
     return templates.TemplateResponse(request, "index.html", {
         "tabs": figs, "cycle": cyc, "when": when,
         "updated": d.get("updated", ""), "level": d.get("level", 10),
-        "lat": d.get("lat", 60), "models": d.get("models", {}),
+        "lat": d.get("lat", 60), "models": site_meta.model_rows(d, cyc),
+        "model_note": site_meta.cycle_note(cyc),
+        "models_by_cycle_json": json.dumps(site_meta.models_by_cycle(d)),
         "cycle_list": cyc_list, "cycle_labels": labels,
         "cycles_json": json.dumps(cycles),
         "age_hours": age_h, "valid_from": valid_from, "valid_to": valid_to,
-        "sources": SOURCES, "partial_badge": partial_badge,
+        "sources": site_meta.SOURCES, "partial_badge": partial_badge,
     })
 
 

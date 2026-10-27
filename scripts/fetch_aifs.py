@@ -28,14 +28,16 @@ import eccodes
 
 RUN_DATE = os.environ.get("RUN_DATE", "20261025")
 CYCLE = os.environ.get("CYCLE", "1800")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.environ.get("DATA_DIR", os.path.join(ROOT, "data"))
 BASE = (f"https://data.ecmwf.int/forecasts/{RUN_DATE}/{CYCLE[:2]}z"
         f"/aifs-ens/0p25/enfo")
 RUN = f"{RUN_DATE}{CYCLE}00"
 STEPS = list(range(0, 361, 6))
-IDX_DIR = "/workspace/data/idx"
+IDX_DIR = os.path.join(DATA, "idx")
 PARAM = "u"
 LEVEL = os.environ.get("LEVEL", "100")
-OUT_NPZ = os.environ.get("OUT", f"/workspace/data/aifs_u{LEVEL}.npz")
+OUT_NPZ = os.environ.get("OUT", os.path.join(DATA, f"aifs_u{LEVEL}.npz"))
 WORKERS = int(os.environ.get("WORKERS", "12"))
 
 os.makedirs(IDX_DIR, exist_ok=True)

@@ -40,8 +40,11 @@ from matplotlib.ticker import FixedLocator, MultipleLocator
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import era5_cache as EC
 
-OUT_DIR = "/workspace/output"
-IDX_DIR = "/workspace/data/idx"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.environ.get("DATA_DIR", os.path.join(ROOT, "data"))
+
+OUT_DIR = os.path.join(ROOT, "output")
+IDX_DIR = os.path.join(ROOT, "data", "idx")
 os.makedirs(OUT_DIR, exist_ok=True)
 os.makedirs(IDX_DIR, exist_ok=True)
 
@@ -163,8 +166,8 @@ def build_figure(run, cyc, level, lat_target, max_step=360, workers=6, domain_la
     runid = f"{run}{cyc}00"          # ECMWF file prefix: YYYYMMDDHHMM00
 
     steps = list(range(0, max_step + 1, 6))
-    ens_npz = f"/workspace/data/aifs_{run}{cyc}_u{level}.npz"
-    sing_npz = f"/workspace/data/aifs_single_{run}{cyc}_u{level}.npz"
+    ens_npz = os.path.join(DATA, f"aifs_{run}{cyc}_u{level}.npz")
+    sing_npz = os.path.join(DATA, f"aifs_single_{run}{cyc}_u{level}.npz")
     cached = os.path.exists(ens_npz) and os.path.exists(sing_npz)
     if cached:
         e = np.load(ens_npz, allow_pickle=True)

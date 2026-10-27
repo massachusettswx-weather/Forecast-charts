@@ -29,7 +29,9 @@ import numpy as np
 import requests
 import eccodes
 
-IDX = "/workspace/data/idx"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.environ.get("DATA_DIR", os.path.join(ROOT, "data"))
+IDX = os.path.join(DATA, "idx")
 os.makedirs(IDX, exist_ok=True)
 
 PRODUCTS = {
@@ -120,7 +122,7 @@ def main():
     bucket, pat = PRODUCTS[a.product]
     cyc = a.cyc.zfill(2)
     steps = list(range(0, a.maxstep + 1, 6))
-    out = a.out or f"/workspace/data/{a.product}_{a.date}{cyc}.npz"
+    out = a.out or os.path.join(DATA, f"{a.product}_{a.date}{cyc}.npz")
 
     def work(step):
         key = pat.format(d=a.date, c=cyc, step=step)

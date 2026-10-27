@@ -34,20 +34,30 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pandas as pd
 import requests
-import numcodecs
 
-CACHE = os.environ.get("ERA5_CACHE_DIR", "/workspace/data/era5_cache")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CACHE = os.environ.get("ERA5_CACHE_DIR", os.path.join(ROOT, "data", "era5_cache"))
 PROF = f"{CACHE}/profiles.npy"
 MAN = f"{CACHE}/manifest.csv"
 LATFILE = f"{CACHE}/lat.txt"
+SLIMIDX = f"{CACHE}/level_index.npy"      # present only in the slim (subset) cache
 B37 = ("https://storage.googleapis.com/gcp-public-data-arco-era5/ar/"
        "1959-2022-full_37-6h-0p25deg-chunk-1.zarr-v2")
 LEV37 = [1, 2, 3, 5, 7, 10, 20, 30, 50, 70, 100, 125, 150, 175, 200, 225, 250,
          300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 775, 800, 825, 850,
          875, 900, 925, 950, 975, 1000]
 NLAT, NLEV = 721, 37
-BLOSC = numcodecs.Blosc()
+BLOSC = None
 _lock = threading.Lock()
+
+
+def blosc():
+    """numcodecs is only needed to read the ARCO zarr chunks (cache building)."""
+    global BLOSC
+    if BLOSC is None:
+        import numcodecs
+        BLOSC = numcodecs.Blosc()
+    return BLOSC
 _miss = []
 
 
@@ -57,7 +67,7 @@ def _load_lat():
         os.makedirs(CACHE, exist_ok=True)
         r = requests.get(f"{B37}/latitude/0", timeout=(20, 120))
         r.raise_for_status()
-        lat = np.frombuffer(BLOSC.decode(r.content), dtype="<f4").astype(np.float64)
+        lat = np.frombuffer(blosc().decode(r.content), dtype="<f4").astype(np.float64)
         np.savetxt(LATFILE, lat)
     return np.loadtxt(LATFILE)
 
@@ -95,7 +105,7 @@ def _chunk(tidx, tries=4):
             r = requests.get(f"{B37}/u_component_of_wind/{tidx}.0.0.0", timeout=(20, 300))
             if r.status_code != 200:
                 return None
-            return np.frombuffer(BLOSC.decode(r.content), dtype="<f4").reshape(NLEV, NLAT, 1440)
+            return np.frombuffer(blosc().decode(r.content), dtype="<f4").reshape(NLEV, NLAT, 1440)
         except Exception:
             time.sleep(1.5 * (k + 1))
     return None
@@ -106,7 +116,7 @@ def _time_axis():
     for i in range(4):
         r = requests.get(f"{B37}/time/{i}", timeout=(20, 120))
         r.raise_for_status()
-        parts.append(np.frombuffer(BLOSC.decode(r.content), dtype="<i8"))
+        parts.append(np.frombuffer(blosc().decode(r.content), dtype="<i8"))
     hrs = np.concatenate(parts)
     return np.array([np.datetime64("1959-01-01") + np.timedelta64(int(x), "h") for x in hrs])
 
@@ -114,6 +124,10 @@ def _time_axis():
 # ----------------------------------------------------------------- builder
 def build(start="10-25", end="11-09", years=range(1991, 2021), hour=12, workers=8):
     """Fetch every (year, date) in the window that is not already cached."""
+    if os.path.exists(SLIMIDX):
+        raise RuntimeError(
+            f"{CACHE} is the SLIM cache (levels 1/3/10/30/50/100/250) - it is "
+            "read-only. Point ERA5_CACHE_DIR at the full cache to extend it.")
     t = _time_axis()
     m0 = manifest()
     have = set(zip(m0["year"], m0["month"], m0["day"], m0["hour"])) if len(m0) else set()
@@ -174,6 +188,13 @@ def climatology(level_hPa, lat=None, start="01-01", end="12-31",
         raise RuntimeError("ERA5 cache empty - run: era5_cache.py build")
     latv = _load_lat()
     lev = LEV37.index(int(level_hPa))
+    if os.path.exists(SLIMIDX):
+        # slim cache: rows are [1, 3, 10, 30, 50, 100, 250], not all 37 levels
+        slim = np.load(SLIMIDX)
+        hit = np.where(slim == lev)[0]
+        if not len(hit):
+            raise RuntimeError(f"level {level_hPa} hPa is not in the slim cache {CACHE}")
+        lev = int(hit[0])
     s_m, s_d = (int(x) for x in start.split("-"))
     e_m, e_d = (int(x) for x in end.split("-"))
     sel = m[(m["year"].isin(list(years)))]

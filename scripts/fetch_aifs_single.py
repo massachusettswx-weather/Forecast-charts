@@ -14,12 +14,14 @@ import eccodes
 
 RUN_DATE = os.environ.get("RUN_DATE", "20261025")
 CYCLE = os.environ.get("CYCLE", "1800")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.environ.get("DATA_DIR", os.path.join(ROOT, "data"))
 BASE = (f"https://data.ecmwf.int/forecasts/{RUN_DATE}/{CYCLE[:2]}z"
         f"/aifs-single/0p25/oper")
 RUN = f"{RUN_DATE}{CYCLE}00"
-LEVEL = "10"
-OUT = os.environ.get("OUT", "/workspace/data/aifs_single_u10.npz")
-IDX = "/workspace/data/idx"
+LEVEL = os.environ.get("LEVEL", "10")
+OUT = os.environ.get("OUT", os.path.join(DATA, f"aifs_single_u{LEVEL}.npz"))
+IDX = os.path.join(DATA, "idx")
 os.makedirs(IDX, exist_ok=True)
 _local = threading.local()
 

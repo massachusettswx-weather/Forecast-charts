@@ -11,22 +11,15 @@ import argparse
 import json
 import os
 import shutil
+import sys
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STORE = os.path.join(ROOT, "data", "store")
 FIGDIR = os.path.join(STORE, "figures")
-
-SOURCES = {
-    "aifs-single": "ECMWF open data (0.25°)",
-    "aifs-ens": "ECMWF open data (0.25°)",
-    "ifs": "ECMWF open data (0.25°)",
-    "eps": "ECMWF open data (0.25°)",
-    "gfs": "NOAA open data (0.25°)",
-    "gefs": "NOAA open data (0.5°)",
-    "gefs_members": "NOAA open data (0.5°)",
-}
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
+import site_meta
 
 TABS = [("physics", "Physics-based", "ECMWF IFS + EPS, NOAA GFS + GEFS"),
         ("ai", "AI", "ECMWF AIFS Single + AIFS ENS"),
@@ -92,14 +85,17 @@ def main():
                       autoescape=select_autoescape(["html"]))
     tpl = env.get_template("index.html")
     import json as _json
+    rows = site_meta.model_rows(latest, cyc)
     html = tpl.render(tabs=tabs, cycle=cyc, when=when,
                       updated=latest.get("updated", ""),
                       level=latest.get("level", 10), lat=latest.get("lat", 60),
-                      models=latest.get("models", {}),
+                      models=rows,
+                      model_note=site_meta.cycle_note(cyc),
+                      models_by_cycle_json=_json.dumps(site_meta.models_by_cycle(latest)),
                       cycle_list=cyc_list, cycle_labels=labels,
                       cycles_json=_json.dumps(cycles),
                       age_hours=age_h, valid_from=valid_from, valid_to=valid_to,
-                      sources=SOURCES, partial_badge=partial_badge)
+                      sources=site_meta.SOURCES, partial_badge=partial_badge)
     with open(os.path.join(out, "index.html"), "w") as fh:
         fh.write(html)
     json.dump(latest, open(os.path.join(out, "latest.json"), "w"), indent=2)

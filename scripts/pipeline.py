@@ -31,22 +31,26 @@ ROOT = os.path.dirname(HERE)
 STORE = os.path.join(ROOT, "data", "store")
 FIGDIR = os.path.join(STORE, "figures")
 SELDIR = os.path.join(STORE, "series")
-PY = os.path.join(ROOT, "venv", "bin", "python")
+PY = (os.environ.get("PIPELINE_PYTHON")
+      or (os.path.join(ROOT, "venv", "bin", "python")
+          if os.path.exists(os.path.join(ROOT, "venv", "bin", "python"))
+          else sys.executable))
 for d in (STORE, FIGDIR, SELDIR):
     os.makedirs(d, exist_ok=True)
 
 ECMWF_LIST = "https://data.ecmwf.int/forecasts/"
 S3 = "https://{bucket}.s3.amazonaws.com/?list-type=2&prefix={prefix}&delimiter=/"
 
-# model key -> (tab, label, family)
+# model key -> (tab, label, family, kind)
 MODELS = {
-    "aifs-single": ("ai", "ECMWF AIFS Single", "ecmwf"),
-    "aifs-ens": ("ai", "ECMWF AIFS ENS", "ecmwf"),
-    "ifs": ("physics", "ECMWF IFS", "ecmwf"),
-    "eps": ("physics", "ECMWF EPS", "ecmwf"),
-    "gfs": ("physics", "NOAA GFS", "ncep"),
-    "gefs": ("physics", "NOAA GEFS", "ncep"),
-    "gefs_members": ("ensembles", "NOAA GEFS members", "ncep"),
+    "aifs-single": ("ai", "ECMWF AIFS Single", "ecmwf", "AI"),
+    "aifs-ens": ("ai", "ECMWF AIFS ENS", "ecmwf", "AI"),
+    "ifs": ("physics", "ECMWF IFS", "ecmwf", "Physics"),
+    "eps": ("physics", "ECMWF EPS", "ecmwf", "Physics"),
+    "gfs": ("physics", "NOAA GFS", "ncep", "Physics"),
+    "gefs": ("physics", "NOAA GEFS", "ncep", "Physics"),
+    "gefs_ctl": ("physics", "NOAA GEFS control", "ncep", "Physics"),
+    "gefs_members": ("ensembles", "NOAA GEFS members", "ncep", "Ensemble members"),
 }
 TABS = [("physics", "Physics-based"), ("ai", "AI"),
         ("hybrid", "Hybrid (physics + AI)"), ("ensembles", "Ensembles (members)")]
@@ -57,7 +61,9 @@ EXTRA = ("gefs_members",)
 ALL_MODELS = CORE + EXTRA
 
 # The 06z and 18z suites carry no ECMWF control (IFS) and no ECMWF EPS:
-# those products publish late and are not part of those cycles.
+# ECMWF only publishes those two products out to 144 h in the 06z/18z runs
+# (the 00z/12z runs go to 240 h), so plotting them would show a forecast that
+# simply stops early. They are left off the chart for those cycles.
 NO_ECMWF_OPS = ("ifs", "eps")
 
 
@@ -392,22 +398,35 @@ def _sync(level, lat, only, members, force):
             fetch_model("gefs_members", gefs_date, gefs_cyc, level)
         fetch_gefs_control(gefs_date, gefs_cyc, level)
 
-    # the figure cycle = the newest cycle that has the most models
-    counts = {}
-    for cyc in (cyc_ec, cyc_gfs, cyc_gefs):
-        if not cyc:
-            continue
-        n = sum(1 for m in MODELS
-                if os.path.exists(series_path(m, cyc, level)) or
-                (m == "gefs" and os.path.exists(os.path.join(SELDIR, f"gefs_ctl_{cyc}_u{level}.npz"))))
-        counts[cyc] = n
-    if not counts:
+    # The figure cycle = the NEWEST cycle that is complete. Never the cycle with
+    # the most models: the 06z/18z suites have no ECMWF IFS/EPS, so an older
+    # 00z/12z cycle would always out-count them and the site would get stuck.
+    candidates = [c for c in (cyc_ec, cyc_gfs, cyc_gefs) if c]
+
+    def have_models(cyc):
+        return {m for m in models_for_cycle(cyc)
+                if os.path.exists(series_path(m, cyc, level))}
+
+    def complete(cyc):
+        want = set(models_for_cycle(cyc)) - set(EXTRA)
+        return want <= have_models(cyc)
+
+    if not candidates:
         log("no cycles available")
         return
-    cycle = max(counts, key=lambda c: counts[c])
+    newest = max(candidates)
+    ready = [c for c in candidates if complete(c)]
+    if ready and max(ready) == newest:
+        cycle, core_ok = newest, True
+    elif datetime.utcnow() >= cycle_deadline(newest):
+        # the newest cycle missed its 9 h deadline -> publish it, flagged PARTIAL
+        cycle, core_ok = newest, False
+    elif ready:
+        cycle, core_ok = max(ready), True
+    else:
+        cycle, core_ok = newest, False
     have = available_models(cycle, level)
     wanted = models_for_cycle(cycle)
-    core_ok = set(wanted) - set(EXTRA) <= have
     past_deadline = datetime.utcnow() >= cycle_deadline(cycle)
 
     st = json.load(open(stf)) if os.path.exists(stf) else {}
@@ -417,6 +436,9 @@ def _sync(level, lat, only, members, force):
 
     if not force and not changed and prev:
         log(f"cycle {cycle}: model set unchanged ({len(have)} models) - nothing to do")
+        if cycle != newest:
+            miss = sorted((set(models_for_cycle(newest)) - set(EXTRA)) - have_models(newest))
+            log(f"  (waiting for the {newest[8:10]}z cycle: {', '.join(miss)})")
         outs = [os.path.join(FIGDIR, f) for f in os.listdir(FIGDIR)
                 if f"_{cycle}_" in f and f.endswith(".png")]
     elif not core_ok and not past_deadline:
@@ -447,12 +469,25 @@ def _sync(level, lat, only, members, force):
         cyc = parts[1]
         tab = parts[0]
         cycles.setdefault(cyc, {})[tab] = f
+    # which models are actually on each cycle's charts (06z/18z: no ECMWF IFS/EPS)
+    def cycle_model_list(cyc):
+        have = {m for m in models_for_cycle(cyc)
+                if os.path.exists(series_path(m, cyc, level))}
+        if have:
+            return sorted(have)
+        # older cycles: the series are long gone from the store, but a published
+        # cycle is complete by construction -> fall back to the suite's model set
+        return sorted(models_for_cycle(cyc))
+
+    cycle_models = {c: cycle_model_list(c) for c in cycles}
     latest = {"cycle": cycle, "level": level, "lat": lat,
               "updated": datetime.now(timezone.utc).isoformat(),
               "figures": {os.path.basename(p): f"/fig/{os.path.basename(p)}" for p in outs},
               "cycles": cycles,
+              "cycle_models": cycle_models,
               "models": {m: {"label": MODELS[m][1], "tab": MODELS[m][0],
-                              "family": MODELS[m][2]} for m in MODELS}}
+                              "family": MODELS[m][2], "kind": MODELS[m][3]}
+                          for m in MODELS}}
     json.dump(latest, open(os.path.join(STORE, "latest.json"), "w"), indent=2)
     status["last_sync"] = datetime.now(timezone.utc).isoformat()
     status["cycles"] = {"ecmwf": cyc_ec, "gfs": cyc_gfs, "gefs": cyc_gefs}

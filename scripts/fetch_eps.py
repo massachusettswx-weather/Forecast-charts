@@ -25,9 +25,11 @@ import eccodes
 RUN_DATE = os.environ.get("RUN_DATE", "20261026")
 CYCLE = os.environ.get("CYCLE", "1200").zfill(4)
 LEVEL = os.environ.get("LEVEL", "10")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.environ.get("DATA_DIR", os.path.join(ROOT, "data"))
 BASE = f"https://data.ecmwf.int/forecasts/{RUN_DATE}/{CYCLE[:2]}z/ifs/0p25"
 RUN = f"{RUN_DATE}{CYCLE}00"
-IDX = "/workspace/data/idx"
+IDX = os.path.join(DATA, "idx")
 os.makedirs(IDX, exist_ok=True)
 _local = threading.local()
 
@@ -126,8 +128,8 @@ if __name__ == "__main__":
     ap.add_argument("--mode", default="both", choices=["both", "control", "eps"])
     args = ap.parse_args()
     t0 = time.time()
-    out_eps = f"/workspace/data/eps_{RUN_DATE}{CYCLE}_u{LEVEL}.npz"
-    out_ctl = f"/workspace/data/ifs_ctl_{RUN_DATE}{CYCLE}_u{LEVEL}.npz"
+    out_eps = os.path.join(DATA, f"eps_{RUN_DATE}{CYCLE}_u{LEVEL}.npz")
+    out_ctl = os.path.join(DATA, f"ifs_ctl_{RUN_DATE}{CYCLE}_u{LEVEL}.npz")
 
     ctl = []
     if args.mode in ("both", "control"):

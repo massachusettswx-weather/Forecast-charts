@@ -100,16 +100,16 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
                   ("gefs_ctl", f"NOAA GEFS {cyc_h}z control (gec00)", C["gefs_ctl"], "s", "-"),
                   ("gfs", f"NOAA GFS {cyc_h}z (deterministic)", C["gfs"], "^", "-")]
     if tab in ("physics", "hybrid"):
-        order += [("eps_mean", "ECMWF EPS 12z ens mean", C["eps_mean"], "D", "-"),
-                  ("ifs_ctl", "ECMWF IFS 12z control (EPS ctl)", C["ifs_ctl"], "D", "-")]
+        order += [("eps_mean", f"ECMWF EPS {cyc_h}z ens mean", C["eps_mean"], "D", "-"),
+                  ("ifs_ctl", f"ECMWF IFS {cyc_h}z control (EPS ctl)", C["ifs_ctl"], "D", "-")]
     if tab in ("ai", "hybrid"):
-        order += [("aifs_mean", "ECMWF AIFS ENS mean (51)", C["mean_aifs"], "o", "-"),
-                  ("aifs_ctl", "ECMWF AIFS ENS control (cf)", C["ctl_aifs"], "o", "-"),
-                  ("aifs_single", "ECMWF AIFS Single", C["single"], "o", "-")]
+        order += [("aifs_mean", f"ECMWF AIFS ENS {cyc_h}z mean (51)", C["mean_aifs"], "o", "-"),
+                  ("aifs_ctl", f"ECMWF AIFS ENS {cyc_h}z control (cf)", C["ctl_aifs"], "o", "-"),
+                  ("aifs_single", f"ECMWF AIFS Single {cyc_h}z", C["single"], "o", "-")]
     if tab == "ensembles":
-        mem_specs = [("aifs_ens_members", "ECMWF AIFS ENS members (50)", "#1f4fd8"),
-                     ("eps_members", "ECMWF EPS members (50)", "#00a0c6"),
-                     ("gefs_members", "NOAA GEFS members (30)", "#8fbf00")]
+        mem_specs = [("aifs_ens_members", f"ECMWF AIFS ENS {cyc_h}z members (50)", "#1f4fd8"),
+                     ("eps_members", f"ECMWF EPS {cyc_h}z members (50)", "#00a0c6"),
+                     ("gefs_members", f"NOAA GEFS {cyc_h}z members (30)", "#8fbf00")]
         for key, label, col in mem_specs:
             if key not in S:
                 continue
@@ -117,10 +117,10 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
             for j in range(prof.shape[0]):
                 ax.plot(times, prof[j], color=col, lw=0.6, alpha=0.35, zorder=2,
                         label=(label if j == 0 else None))
-        for key, label, col, mk, ls in [("aifs_mean", "ECMWF AIFS ENS mean", C["mean_aifs"], "o", "-"),
-                                       ("aifs_ctl", "ECMWF AIFS ENS control", C["ctl_aifs"], "o", "-"),
-                                       ("eps_mean", "ECMWF EPS ens mean", C["eps_mean"], "D", "-"),
-                                       ("gefs_mean", "NOAA GEFS ens mean", C["gefs_mean"], "s", "-")]:
+        for key, label, col, mk, ls in [("aifs_mean", f"ECMWF AIFS ENS {cyc_h}z mean", C["mean_aifs"], "o", "-"),
+                                       ("aifs_ctl", f"ECMWF AIFS ENS {cyc_h}z control", C["ctl_aifs"], "o", "-"),
+                                       ("eps_mean", f"ECMWF EPS {cyc_h}z ens mean", C["eps_mean"], "D", "-"),
+                                       ("gefs_mean", f"NOAA GEFS {cyc_h}z ens mean", C["gefs_mean"], "s", "-")]:
             if key in S:
                 t, v = S[key]
                 ax.plot(t, v, color=col, lw=2.8, marker=mk, markersize=4.2,
@@ -169,9 +169,10 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
         "ensembles": f"{'  •  '.join(parts)}  {dom} Zonal Mean Zonal Wind",
     }
     try:
-        when = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}Z").strftime("%dz %d %b %Y")
+        d = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}Z")
+        when = f"{d.strftime('%H')}z {d.strftime('%d %b %Y')}"
     except Exception:
-        when = cycle
+        when = f"{cycle[8:10]}z {cycle}"
     sub = (f"{when}   •   ERA5 1991–2020 climatology   •   "
            f"{level} hPa   •   analysis {analysis:.1f} m/s")
     _finish(fig, ax, titles[tab], sub, tmin, tmax, (-45, 45))

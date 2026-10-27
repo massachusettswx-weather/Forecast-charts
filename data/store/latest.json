@@ -27,37 +27,64 @@
     "aifs-single": {
       "label": "ECMWF AIFS Single",
       "tab": "ai",
-      "family": "ecmwf"
+      "family": "ecmwf",
+      "kind": "AI"
     },
     "aifs-ens": {
       "label": "ECMWF AIFS ENS",
       "tab": "ai",
-      "family": "ecmwf"
+      "family": "ecmwf",
+      "kind": "AI"
     },
     "ifs": {
       "label": "ECMWF IFS",
       "tab": "physics",
-      "family": "ecmwf"
+      "family": "ecmwf",
+      "kind": "Physics"
     },
     "eps": {
       "label": "ECMWF EPS",
       "tab": "physics",
-      "family": "ecmwf"
+      "family": "ecmwf",
+      "kind": "Physics"
     },
     "gfs": {
       "label": "NOAA GFS",
       "tab": "physics",
-      "family": "ncep"
+      "family": "ncep",
+      "kind": "Physics"
     },
     "gefs": {
       "label": "NOAA GEFS",
       "tab": "physics",
-      "family": "ncep"
+      "family": "ncep",
+      "kind": "Physics"
     },
     "gefs_members": {
       "label": "NOAA GEFS members",
       "tab": "ensembles",
-      "family": "ncep"
+      "family": "ncep",
+      "kind": "Ensemble members"
     }
+  },
+  "cycle_models": {
+    "2026102612": [
+      "aifs-ens",
+      "aifs-single",
+      "eps",
+      "gefs",
+      "gefs_ctl",
+      "gefs_members",
+      "gfs",
+      "ifs"
+    ],
+    "2026102618": [
+      "aifs-ens",
+      "aifs-single",
+      "gefs",
+      "gefs_ctl",
+      "gefs_members",
+      "gfs"
+    ]
   }
 }
