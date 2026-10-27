@@ -77,7 +77,7 @@ def index_entry(bucket, key, cache, level=10):
     NOAA .idx format: "msgno:start_byte:d=...:UGRD:10 mb:anl:..." where the
     byte field is the CUMULATIVE offset of each message start."""
     if not os.path.exists(cache) or os.path.getsize(cache) == 0:
-        tmp = cache + ".part"
+        tmp = f"{cache}.{os.getpid()}.{threading.get_ident()}.part"
         try:
             with open(tmp, "wb") as f:
                 f.write(get(s3(bucket, key) + ".idx"))
@@ -88,7 +88,14 @@ def index_entry(bucket, key, cache, level=10):
             except OSError:
                 pass
             return None
-        os.replace(tmp, cache)
+        try:
+            os.replace(tmp, cache)
+        except OSError:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return None
     lines = [l for l in open(cache, errors="ignore").read().split("\n") if l.strip()]
     want = f":UGRD:{level} mb:"
     for i, line in enumerate(lines):

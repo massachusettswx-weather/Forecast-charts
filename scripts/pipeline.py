@@ -221,7 +221,9 @@ def fetch_model(model, date, cyc, level, max_step=None):
     out = series_path(model, f"{date}{cyc}", level)
     if os.path.exists(out):
         have = series_max_step(out)
-        if max_step is None or have >= max_step:
+        # a small shortfall is normal (a step or two may still be missing) -
+        # only a materially shorter horizon is worth another fetch
+        if max_step is None or have >= max_step - 24:
             log(f"  {model}: cached (to {have}h)")
             return out
         log(f"  {model}: cached only to {have}h - refetching to {max_step}h")

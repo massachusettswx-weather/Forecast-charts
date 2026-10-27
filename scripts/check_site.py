@@ -113,14 +113,16 @@ def main():
 
     # 4b. the published cycle must not be stale --------------------------------
     try:
-        ec_date, ec_cyc = P.resolve_ecmwf()
+        ec_date, ec_cyc, ec_horizon = P.resolve_ecmwf()
         if ec_date:
             newest = f"{ec_date}{ec_cyc}"
             gap = (int(newest[8:10]) - int(cycle[8:10])) % 24
             if newest[:8] == cycle[:8]:                # same calendar day
                 check(gap <= 6,
-                      f"published cycle is current (newest published by ECMWF: {newest}z)",
-                      f"STALE: newest ECMWF cycle is {newest}z, the site still shows {cycle}z")
+                      f"published cycle is current (newest ECMWF cycle {newest}z, "
+                      f"horizon {ec_horizon}h)",
+                      f"STALE: newest ECMWF cycle is {newest}z (horizon {ec_horizon}h), "
+                      f"the site still shows {cycle}z")
             else:
                 check(True, f"newest ECMWF cycle {newest}z", "")
     except Exception as e:
