@@ -2,7 +2,7 @@
   "cycle": "2026102618",
   "level": 10,
   "lat": 60.0,
-  "updated": "2026-10-27T02:48:44.306182+00:00",
+  "updated": "2026-10-27T04:12:26.110197+00:00",
   "figures": {
     "physics_2026102618_u10_60.png": "/fig/physics_2026102618_u10_60.png",
     "ai_2026102618_u10_60.png": "/fig/ai_2026102618_u10_60.png",
@@ -21,56 +21,6 @@
       "ensembles": "ensembles_2026102618_u10_60.png",
       "hybrid": "hybrid_2026102618_u10_60.png",
       "physics": "physics_2026102618_u10_60.png"
-    }
-  },
-  "models": {
-    "aifs-ens": {
-      "label": "ECMWF AIFS ENS",
-      "tab": "ai",
-      "family": "ecmwf",
-      "kind": "AI"
-    },
-    "aifs-single": {
-      "label": "ECMWF AIFS Single",
-      "tab": "ai",
-      "family": "ecmwf",
-      "kind": "AI"
-    },
-    "eps": {
-      "label": "ECMWF EPS",
-      "tab": "physics",
-      "family": "ecmwf",
-      "kind": "Physics"
-    },
-    "gefs": {
-      "label": "NOAA GEFS",
-      "tab": "physics",
-      "family": "ncep",
-      "kind": "Physics"
-    },
-    "gefs_ctl": {
-      "label": "NOAA GEFS control",
-      "tab": "physics",
-      "family": "ncep",
-      "kind": "Physics"
-    },
-    "gefs_members": {
-      "label": "NOAA GEFS members",
-      "tab": "ensembles",
-      "family": "ncep",
-      "kind": "Ensemble members"
-    },
-    "gfs": {
-      "label": "NOAA GFS",
-      "tab": "physics",
-      "family": "ncep",
-      "kind": "Physics"
-    },
-    "ifs": {
-      "label": "ECMWF IFS",
-      "tab": "physics",
-      "family": "ecmwf",
-      "kind": "Physics"
     }
   },
   "cycle_models": {
@@ -92,5 +42,55 @@
       "gefs_members",
       "gfs"
     ]
+  },
+  "models": {
+    "aifs-single": {
+      "label": "ECMWF AIFS Single",
+      "tab": "ai",
+      "family": "ecmwf",
+      "kind": "AI"
+    },
+    "aifs-ens": {
+      "label": "ECMWF AIFS ENS",
+      "tab": "ai",
+      "family": "ecmwf",
+      "kind": "AI"
+    },
+    "ifs": {
+      "label": "ECMWF IFS",
+      "tab": "physics",
+      "family": "ecmwf",
+      "kind": "Physics"
+    },
+    "eps": {
+      "label": "ECMWF EPS",
+      "tab": "physics",
+      "family": "ecmwf",
+      "kind": "Physics"
+    },
+    "gfs": {
+      "label": "NOAA GFS",
+      "tab": "physics",
+      "family": "ncep",
+      "kind": "Physics"
+    },
+    "gefs": {
+      "label": "NOAA GEFS",
+      "tab": "physics",
+      "family": "ncep",
+      "kind": "Physics"
+    },
+    "gefs_ctl": {
+      "label": "NOAA GEFS control",
+      "tab": "physics",
+      "family": "ncep",
+      "kind": "Physics"
+    },
+    "gefs_members": {
+      "label": "NOAA GEFS members",
+      "tab": "ensembles",
+      "family": "ncep",
+      "kind": "Ensemble members"
+    }
   }
 }
