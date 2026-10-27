@@ -49,8 +49,16 @@ def step_times(steps, cycle):
     return t0 + pd.to_timedelta(np.asarray(steps), unit="h")
 
 
+def domain_label(lat):
+    """'60˚N', '70˚N', 'NH (0-90N)'."""
+    if lat == 0:
+        return "NH (0-90N)"
+    return f"{lat:.0f}˚N"
+
+
 def load_clim(level, lat, t0, t1):
-    mean, std, _ = EC.climatology(level, lat=lat,
+    # lat 0 = the NH (0-90N) area-weighted mean
+    mean, std, _ = EC.climatology(level, lat=(None if lat == 0 else lat),
                                   start=f"{t0.month:02d}-{t0.day:02d}",
                                   end=f"{t1.month:02d}-{t1.day:02d}")
     def pick(times):
@@ -153,7 +161,7 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
     else:
         ax.legend(loc="lower left", frameon=True, framealpha=0.95, fontsize=9.6)
 
-    dom = f"{lat:.0f}˚N"
+    dom = domain_label(lat)
     # title reflects only the models that are actually in this figure
     has = lambda k: k in S
     parts = []
@@ -284,7 +292,7 @@ def render_ssw(S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
     axp.tick_params(axis="x", labelrotation=0, pad=2)
     ax.set_xlim(tmin.normalize(), tmax + pd.Timedelta(hours=6))
 
-    dom = f"{lat:.0f}˚N"
+    dom = domain_label(lat)
     title = f"SSW watch  •  {dom} @ {level} hPa easterly (≥ {SSW_MIN_HOURS} h) probability"
     fig.suptitle(title, x=0.062, ha="left", fontsize=16.5, fontweight="bold", y=0.972)
     fig.text(0.062, 0.933,

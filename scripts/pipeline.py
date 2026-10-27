@@ -55,6 +55,11 @@ MODELS = {
 TABS = [("physics", "Physics-based"), ("ai", "AI"),
         ("hybrid", "Hybrid (physics + AI)"), ("ensembles", "Ensembles (members)")]
 
+# domains the site offers: a latitude, or 0 = the NH (0-90N) area-weighted mean.
+# Free: the zonal profile of every member is already in the store.
+LATS = (60.0, 70.0, 0.0)
+LAT_LABELS = {60.0: "60˚N", 70.0: "70˚N", 0.0: "NH (0-90N)"}
+
 # models that must be present for a complete cycle, and the slow extras
 CORE = ("aifs-ens", "aifs-single", "ifs", "eps", "gfs", "gefs", "gefs_ctl")
 EXTRA = ("gefs_members",)
@@ -293,15 +298,21 @@ def _series_for_tab(tab, cycle, level, lat):
         d = np.load(path, allow_pickle=True)
         if member is None:                      # scalar series (u60 / nh_mean)
             t = np.array(d["steps"]) if "steps" in d else None
-            vals = d["u60"] if "u60" in d else d.get("nh_mean")
+            if lat == 0 and "nh_mean" in d:
+                vals = d["nh_mean"]            # NH area-weighted mean
+            else:
+                vals = d["u60"] if "u60" in d else d.get("nh_mean")
             S[key] = (t, vals)
         else:                                  # zonal profile per member
             if "zonal" not in d:
                 return                          # this model keeps only the mean
             z = d["zonal"]
             lats = d["lats"]
-            i = int(np.abs(lats - lat).argmin())
-            prof = z[:, :, i] if z.ndim == 3 else z[:, i]
+            if lat == 0:
+                prof = nh_mean(z, lats)        # NH area-weighted mean
+            else:
+                i = int(np.abs(lats - lat).argmin())
+                prof = z[:, :, i] if z.ndim == 3 else z[:, i]
             t = d["steps"]
             S[key] = (t, prof)
 
@@ -329,9 +340,13 @@ def _series_for_tab(tab, cycle, level, lat):
     # aifs mean/control need separate extraction below
     if has("aifs-ens"):
         d = np.load(p("aifs-ens"), allow_pickle=True)
-        z = d["zonal"]; lats = d["lats"]; i = int(np.abs(lats - lat).argmin())
+        z = d["zonal"]; lats = d["lats"]
+        if lat == 0:
+            prof = nh_mean(z, lats)
+        else:
+            i = int(np.abs(lats - lat).argmin())
+            prof = z[:, :, i]
         t = d["steps"]
-        prof = z[:, :, i]
         pert = list(range(1, prof.shape[1]))
         S["aifs_mean"] = (t, prof[:, pert].mean(axis=1))
         S["aifs_ctl"] = (t, prof[:, 0])
@@ -341,8 +356,12 @@ def _series_for_tab(tab, cycle, level, lat):
         d = np.load(p("eps"), allow_pickle=True)
         S["eps_mean"] = (d["steps"], d["u60"])
         if "zonal" in d:
-            z = d["zonal"]; lats = d["lats"]; i = int(np.abs(lats - lat).argmin())
-            S["eps_members"] = (d["steps"], z[:, :, i])
+            z = d["zonal"]; lats = d["lats"]
+            if lat == 0:
+                S["eps_members"] = (d["steps"], nh_mean(z, lats))
+            else:
+                i = int(np.abs(lats - lat).argmin())
+                S["eps_members"] = (d["steps"], z[:, :, i])
     if has("ifs"):
         d = np.load(p("ifs"), allow_pickle=True)
         S["ifs_ctl"] = (d["steps"], d["u60"])
@@ -351,6 +370,20 @@ def _series_for_tab(tab, cycle, level, lat):
             t, pr = S[key]
             S[key] = (t, pr.T)          # -> (nmember, nstep)
     return S
+
+
+def nh_mean(z, lats):
+    """Area-weighted NH (0-90N) mean of a zonal profile array.
+
+    z: (nstep, nmember, nlat) or (nstep, nlat); lats: the latitude array.
+    """
+    z = np.asarray(z, float)
+    lats = np.asarray(lats, float)
+    nh = lats >= 0
+    w = np.cos(np.deg2rad(lats[nh]))
+    if z.ndim == 3:
+        return (z[:, :, nh] * w).sum(axis=2) / w.sum()
+    return (z[:, nh] * w).sum(axis=1) / w.sum()
 
 
 def available_models(cycle, level):
@@ -412,39 +445,43 @@ def pick_cycle(candidates, have_models, now=None):
     return newest, False
 
 
-def render_all(cycle, level, lat):
+def render_all(cycle, level, lat=None, lats=None):
+    """Render every tab for every domain (latitude) of this cycle."""
     import render
-    S = _series_for_tab("ensembles", cycle, level, lat)   # superset: includes members
-    if not S:
-        log("  nothing to render")
-        return []
-    times = np.concatenate([np.asarray(v[0]) for v in S.values()])
-    t0 = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}:00")
-    t0 = t0.tz_localize(None)
-    clim_pick, clim_sd = render.load_clim(level, lat, t0, t0 + pd.Timedelta(hours=360))
-    analysis = float(S["aifs_ctl"][1][0]) if "aifs_ctl" in S else float("nan")
+    lats = tuple(lats or LATS)
     outs = []
-    for tab, _ in TABS:
-        tabS = dict(S)
-        if tab == "physics":
-            for k in ("aifs_mean", "aifs_ctl", "aifs_single"):
-                tabS.pop(k, None)
-        if tab == "ai":
-            for k in ("eps_mean", "ifs_ctl", "gefs_mean", "gefs_ctl", "gfs"):
-                tabS.pop(k, None)
-        if tab == "ensembles":
-            tabS = {k: v for k, v in S.items() if k in
-                    ("aifs_mean", "aifs_ctl", "eps_mean", "gefs_mean",
-                     "aifs_ens_members", "eps_members", "gefs_members")}
-        out = os.path.join(FIGDIR, f"{tab}_{cycle}_u{level}_{int(lat)}.png")
-        render.render_tab(tab, tabS, clim_pick, clim_sd, out, level, lat, cycle, analysis)
-        outs.append(out)
-        log(f"  rendered {os.path.basename(out)}")
-    # SSW watch: the reversal probability product (uses the member series)
-    ssw_out = os.path.join(FIGDIR, f"ssw_{cycle}_u{level}_{int(lat)}.png")
-    if render.render_ssw(S, clim_pick, clim_sd, ssw_out, level, lat, cycle, analysis):
-        outs.append(ssw_out)
-        log(f"  rendered {os.path.basename(ssw_out)}")
+    for lat_i in lats:
+        S = _series_for_tab("ensembles", cycle, level, lat_i)   # superset: members
+        if not S:
+            continue
+        t0 = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}:00")
+        t0 = t0.tz_localize(None)
+        clim_pick, clim_sd = render.load_clim(level, lat_i, t0,
+                                              t0 + pd.Timedelta(hours=360))
+        analysis = float(S["aifs_ctl"][1][0]) if "aifs_ctl" in S else float("nan")
+        for tab, _ in TABS:
+            tabS = dict(S)
+            if tab == "physics":
+                for k in ("aifs_mean", "aifs_ctl", "aifs_single"):
+                    tabS.pop(k, None)
+            if tab == "ai":
+                for k in ("eps_mean", "ifs_ctl", "gefs_mean", "gefs_ctl", "gfs"):
+                    tabS.pop(k, None)
+            if tab == "ensembles":
+                tabS = {k: v for k, v in S.items() if k in
+                        ("aifs_mean", "aifs_ctl", "eps_mean", "gefs_mean",
+                         "aifs_ens_members", "eps_members", "gefs_members")}
+            out = os.path.join(FIGDIR, f"{tab}_{cycle}_u{level}_{int(lat_i)}.png")
+            render.render_tab(tab, tabS, clim_pick, clim_sd, out, level, lat_i,
+                              cycle, analysis)
+            outs.append(out)
+            log(f"  rendered {os.path.basename(out)}")
+        # SSW watch: the reversal probability product (uses the member series)
+        ssw_out = os.path.join(FIGDIR, f"ssw_{cycle}_u{level}_{int(lat_i)}.png")
+        if render.render_ssw(S, clim_pick, clim_sd, ssw_out, level, lat_i, cycle,
+                             analysis):
+            outs.append(ssw_out)
+            log(f"  rendered {os.path.basename(ssw_out)}")
     return outs
 
 
@@ -546,19 +583,27 @@ def _sync(level, lat, only, members, force):
         st["partial"] = not core_ok
         json.dump(st, open(stf, "w"), indent=2)
 
-    # history: keep the last KEEP cycles of figures
-    KEEP = 14
-    keep = sorted({f.split("_")[1] for f in os.listdir(FIGDIR)})[-KEEP:]
+    # history: the main domain keeps KEEP cycles, the extra domains fewer
+    # (the store is committed to the repo and uploaded to Pages)
+    KEEP, KEEP_OTHER = 14, 3
+    all_cycles = sorted({f.split("_")[1] for f in os.listdir(FIGDIR)})
+    keep_main = set(all_cycles[-KEEP:])
+    keep_other = set(all_cycles[-KEEP_OTHER:])
     for f in os.listdir(FIGDIR):
-        cyc = f.split("_")[1]
+        parts = f.split("_")
+        cyc = parts[1]
+        lat = parts[3].split(".")[0] if len(parts) > 3 else "60"
+        keep = keep_main if lat == str(int(60)) else keep_other
         if cyc not in keep:
             os.remove(os.path.join(FIGDIR, f))
+    # store layout: {cycle: {lat: {tab: figure}}}
     cycles = {}
     for f in sorted(os.listdir(FIGDIR)):
         parts = f.split("_")
-        cyc = parts[1]
-        tab = parts[0]
-        cycles.setdefault(cyc, {})[tab] = f
+        if len(parts) < 4:
+            continue
+        tab, cyc, lat = parts[0], parts[1], parts[3].split(".")[0]
+        cycles.setdefault(cyc, {}).setdefault(lat, {})[tab] = f
     # which models are actually on each cycle's charts (06z/18z: no ECMWF IFS/EPS)
     def cycle_model_list(cyc):
         have = {m for m in models_for_cycle(cyc)

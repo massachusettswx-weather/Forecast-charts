@@ -50,11 +50,18 @@ def main():
 
     cycles = latest.get("cycles", {})
     if not cycles:                      # fall back to the current cycle
-        cycles = {latest.get("cycle", ""): {k: v for k, v in figs.items()}}
+        cycles = {latest.get("cycle", ""): {"60": {k: v for k, v in figs.items()}}}
     cyc_list = sorted(cycles.keys(), reverse=True)
+    lat_list = sorted({l for c in cycles.values() for l in c},
+                       key=site_meta.lat_sort_key)
     tabs = []
     for key, title, blurb in TABS:
-        cand = [cycles[c][key] for c in cyc_list if key in cycles.get(c, {})]
+        cand = []
+        for c in cyc_list:
+            for l in lat_list:
+                f = (cycles.get(c, {}).get(l) or {}).get(key)
+                if f:
+                    cand.append(f)
         tabs.append(dict(key=key, title=title, blurb=blurb,
                          img=("fig/" + cand[0]) if cand else None))
 
@@ -93,6 +100,8 @@ def main():
                       models=rows,
                       model_note=site_meta.cycle_note(cyc),
                       models_by_cycle_json=_json.dumps(site_meta.models_by_cycle(latest)),
+                      lat_list=lat_list, lat_labels=site_meta.LAT_LABELS,
+                      default_lat=site_meta.DEFAULT_LAT,
                       cycle_list=cyc_list, cycle_labels=labels,
                       cycles_json=_json.dumps(cycles),
                       age_hours=age_h, valid_from=valid_from, valid_to=valid_to,

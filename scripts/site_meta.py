@@ -21,6 +21,15 @@ SOURCES = {
     "gefs_members": "NOAA open data (0.5°)",
 }
 
+# domains the site offers; 0 = the NH (0-90N) area-weighted mean
+DEFAULT_LAT = "60"
+LAT_ORDER = ["60", "70", "0"]
+LAT_LABELS = {"60": "60˚N", "70": "70˚N", "0": "NH (0-90N)"}
+
+
+def lat_sort_key(lat):
+    return (LAT_ORDER.index(lat) if lat in LAT_ORDER else 99, lat)
+
 NO_OPS_NOTE = ("ECMWF IFS control and ECMWF EPS are not shown in the 06z/18z cycles "
                "— ECMWF publishes those two runs only out to 144 h, so a 15-day "
                "chart would just stop early. AIFS, GFS and GEFS run the full "

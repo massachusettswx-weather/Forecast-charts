@@ -56,13 +56,20 @@ def index(request: Request):
     d = latest()
     cycles = d.get("cycles", {}) or {}
     cyc_list = sorted(cycles.keys(), reverse=True)
+    lat_list = sorted({l for c in cycles.values() for l in c},
+                       key=site_meta.lat_sort_key)
     figs = []
     for key, title, blurb in TABS:
-        cand = [cycles[c][key] for c in cyc_list if key in cycles.get(c, {})]
+        cand = []
+        for c in cyc_list:
+            for l in lat_list:
+                f = (cycles.get(c, {}).get(l) or {}).get(key)
+                if f:
+                    cand.append(f)
         img = ("/fig/" + cand[0]) if cand else None
         figs.append(dict(key=key, title=title, blurb=blurb, img=img))
     cyc = d.get("cycle")
-    cycles = d.get("cycles", {}) or {cyc: {}}
+    cycles = d.get("cycles", {}) or {cyc: {"60": {}}}
     cyc_list = sorted(cycles.keys(), reverse=True)
     labels = {}
     for c in cyc_list:
@@ -93,6 +100,8 @@ def index(request: Request):
         "lat": d.get("lat", 60), "models": site_meta.model_rows(d, cyc),
         "model_note": site_meta.cycle_note(cyc),
         "models_by_cycle_json": json.dumps(site_meta.models_by_cycle(d)),
+        "lat_list": lat_list, "lat_labels": site_meta.LAT_LABELS,
+        "default_lat": site_meta.DEFAULT_LAT,
         "cycle_list": cyc_list, "cycle_labels": labels,
         "cycles_json": json.dumps(cycles),
         "age_hours": age_h, "valid_from": valid_from, "valid_to": valid_to,

@@ -75,6 +75,11 @@
         <option value="{{ c }}" {{ 'selected' if c == cycle else '' }}>{{ cycle_labels.get(c, c) }}</option>
       {% endfor %}
     </select>
+    <select class="cycle" id="latpick" title="domain">
+      {% for l in lat_list %}
+        <option value="{{ l }}" {{ 'selected' if l == default_lat else '' }}>{{ lat_labels.get(l, l) }}</option>
+      {% endfor %}
+    </select>
   </nav>
 </header>
 
@@ -132,6 +137,16 @@
   const MODELS_BY_CYCLE = {{ models_by_cycle_json | safe }};
   const CURRENT_CYCLE = {{ cycle | tojson }};
   const pick = document.getElementById('cyclepick');
+  const latpick = document.getElementById('latpick');
+  let curCycle = CURRENT_CYCLE;
+  let curLat = latpick ? latpick.value : "{{ default_lat }}";
+  function applyFigures() {
+    const perLat = (CYCLES[curCycle] || {})[curLat] || {};
+    panels.forEach(p => {
+      const img = document.getElementById('img-' + p.dataset.key);
+      if (img && perLat[p.dataset.key]) img.src = 'fig/' + perLat[p.dataset.key];
+    });
+  }
   function renderModels(c) {
     const entry = MODELS_BY_CYCLE[c] || {rows: [], note: ''};
     const tbody = document.getElementById('modelrows');
@@ -144,13 +159,15 @@
     if (note) note.textContent = entry.note || '';
   }
   renderModels(CURRENT_CYCLE);
+  applyFigures();
   if (pick) pick.addEventListener('change', () => {
-    const c = CYCLES[pick.value] || {};
-    panels.forEach(p => {
-      const img = document.getElementById('img-' + p.dataset.key);
-      if (img && c[p.dataset.key]) img.src = 'fig/' + c[p.dataset.key];
-    });
-    renderModels(pick.value);
+    curCycle = pick.value;
+    applyFigures();
+    renderModels(curCycle);
+  });
+  if (latpick) latpick.addEventListener('change', () => {
+    curLat = latpick.value;
+    applyFigures();
   });
 </script>
 </body>

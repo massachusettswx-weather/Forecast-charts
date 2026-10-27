@@ -61,12 +61,22 @@ def main():
     print(f"cycle {cycle} ({R.cycle_label(cycle)})")
 
     # 1. figures on disk ---------------------------------------------------
-    figs = (latest.get("cycles") or {}).get(cycle) or {}
+    per_lat = (latest.get("cycles") or {}).get(cycle) or {}
+    default_lat = latest.get("default_lat", "60")
+    figs = per_lat.get(default_lat) or {}
     for tab in ("physics", "ai", "hybrid", "ensembles", "ssw"):
         f = figs.get(tab)
         check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
               f"figure present: {tab}",
               f"figure MISSING: {tab} ({f})")
+    # the other domains the site offers
+    for lat in sorted(per_lat):
+        if lat == default_lat:
+            continue
+        f = (per_lat[lat] or {}).get("ai")
+        check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
+              f"domain {lat}: figure present",
+              f"domain {lat}: figure MISSING ({f})")
 
     # 2. the label says the cycle hour ------------------------------------
     want = R.cycle_label(cycle)
