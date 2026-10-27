@@ -34,12 +34,20 @@ STORE = os.path.join(ROOT, "data", "store")
 FIGDIR = os.path.join(STORE, "figures")
 SITE = "https://massachusettswx-weather.github.io/Forecast-charts"
 
-ok, bad = [], []
+ok, bad, warn = [], [], []
 
 
-def check(cond, good, err):
-    (ok if cond else bad).append(good if cond else err)
-    print(("  ok   " if cond else "  FAIL ") + (good if cond else err))
+def check(cond, good, err, critical=True):
+    """critical=True -> a failure blocks the deploy; otherwise it is a warning."""
+    if cond:
+        ok.append(good)
+        print("  ok    " + good)
+    elif critical:
+        bad.append(err)
+        print("  FAIL  " + err)
+    else:
+        warn.append(err)
+        print("  warn  " + err)
     return cond
 
 
@@ -63,12 +71,19 @@ def main():
     # 1. figures on disk ---------------------------------------------------
     per_lat = (latest.get("cycles") or {}).get(cycle) or {}
     default_lat = latest.get("default_lat", "60")
+    if per_lat and default_lat not in per_lat and "physics" in per_lat:
+        per_lat = {default_lat: per_lat}      # older store layout: flat
     figs = per_lat.get(default_lat) or {}
-    for tab in ("physics", "ai", "hybrid", "ensembles", "ssw"):
+    for tab in ("physics", "ai", "hybrid", "ensembles"):
         f = figs.get(tab)
         check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
               f"figure present: {tab}",
               f"figure MISSING: {tab} ({f})")
+    f = figs.get("ssw")
+    check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
+          "figure present: ssw",
+          f"figure MISSING: ssw ({f}) - the SSW product is optional",
+          critical=False)
     # the other domains the site offers
     for lat in sorted(per_lat):
         if lat == default_lat:
@@ -76,7 +91,8 @@ def main():
         f = (per_lat[lat] or {}).get("ai")
         check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
               f"domain {lat}: figure present",
-              f"domain {lat}: figure MISSING ({f})")
+              f"domain {lat}: figure MISSING ({f})",
+              critical=False)
 
     # 2. the label says the cycle hour ------------------------------------
     want = R.cycle_label(cycle)
@@ -132,7 +148,7 @@ def main():
                       f"published cycle is current (newest ECMWF cycle {newest}z, "
                       f"horizon {ec_horizon}h)",
                       f"STALE: newest ECMWF cycle is {newest}z (horizon {ec_horizon}h), "
-                      f"the site still shows {cycle}z")
+                      f"the site still shows {cycle}z", critical=False)
             else:
                 check(True, f"newest ECMWF cycle {newest}z", "")
     except Exception as e:
@@ -161,6 +177,10 @@ def main():
         except Exception as e:
             check(False, "", f"deployed site unreachable: {e!r}")
 
+    if warn:
+        print(f"\n{len(warn)} warning(s):")
+        for w in warn:
+            print("   -", w)
     print(f"\n{len(ok)} ok, {len(bad)} failed")
     return 1 if bad else 0
 

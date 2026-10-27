@@ -407,7 +407,8 @@ def series_signature(cycle, level):
         p = series_path(m, cycle, level)
         if os.path.exists(p):
             out.append((m, series_max_step(p)))
-    return (DATA_VERSION, tuple(sorted(out)))
+    rendered = (DATA_VERSION, tuple(LATS), tuple(t for t, _ in TABS) + ("ssw",))
+    return (rendered, tuple(sorted(out)))
 
 
 def cycle_deadline(cycle):
