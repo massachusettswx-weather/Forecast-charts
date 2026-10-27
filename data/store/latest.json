@@ -24,23 +24,17 @@
     }
   },
   "models": {
-    "aifs-single": {
-      "label": "ECMWF AIFS Single",
-      "tab": "ai",
-      "family": "ecmwf",
-      "kind": "AI"
-    },
     "aifs-ens": {
       "label": "ECMWF AIFS ENS",
       "tab": "ai",
       "family": "ecmwf",
       "kind": "AI"
     },
-    "ifs": {
-      "label": "ECMWF IFS",
-      "tab": "physics",
+    "aifs-single": {
+      "label": "ECMWF AIFS Single",
+      "tab": "ai",
       "family": "ecmwf",
-      "kind": "Physics"
+      "kind": "AI"
     },
     "eps": {
       "label": "ECMWF EPS",
@@ -48,14 +42,14 @@
       "family": "ecmwf",
       "kind": "Physics"
     },
-    "gfs": {
-      "label": "NOAA GFS",
+    "gefs": {
+      "label": "NOAA GEFS",
       "tab": "physics",
       "family": "ncep",
       "kind": "Physics"
     },
-    "gefs": {
-      "label": "NOAA GEFS",
+    "gefs_ctl": {
+      "label": "NOAA GEFS control",
       "tab": "physics",
       "family": "ncep",
       "kind": "Physics"
@@ -65,6 +59,18 @@
       "tab": "ensembles",
       "family": "ncep",
       "kind": "Ensemble members"
+    },
+    "gfs": {
+      "label": "NOAA GFS",
+      "tab": "physics",
+      "family": "ncep",
+      "kind": "Physics"
+    },
+    "ifs": {
+      "label": "ECMWF IFS",
+      "tab": "physics",
+      "family": "ecmwf",
+      "kind": "Physics"
     }
   },
   "cycle_models": {
