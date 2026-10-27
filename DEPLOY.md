@@ -44,7 +44,8 @@ wakes 4× a day for ~10 minutes.
 ### If the sandbox home is reset
 
 `/root/.ssh` can be wiped between sessions. The private key also lives at
-`/workspace/.home/.ssh/github_deploy` (persistent volume) - restore with:
+`/workspace/.home/.ssh/github_deploy` (persistent volume) - restore with
+`make key` (or by hand):
 
 ```bash
 mkdir -p /root/.ssh && chmod 700 /root/.ssh
@@ -61,14 +62,13 @@ EOF
 chmod 600 /root/.ssh/config
 ```
 
-(If the *key itself* was lost, generate a new one and add the public key in the
-repo's **Settings → Deploy keys → Add deploy key** with *Allow write access*
-ticked:
+(If the *key itself* was lost, `make key` generates a new one and prints the
+public key - add it in the repo's **Settings → Deploy keys → Add deploy key**
+with *Allow write access* ticked.)
 
-```bash
-ssh-keygen -t ed25519 -C "sandbox-deploy" -f /workspace/.home/.ssh/github_deploy -N ""
-cat /workspace/.home/.ssh/github_deploy.pub
-```)
+**You should rarely need any of this.** The GitHub Actions runner fetches,
+renders, commits the store and deploys Pages by itself; the sandbox is only
+needed for one-off work. `make deploy` = restore the key + push.
 
 > **US DST note:** the cron is UTC, so it never changes. Only the local clock
 > reading does: DST ends **Sun 1 Nov 2026** (02:00 EDT -> 01:00 EST), after

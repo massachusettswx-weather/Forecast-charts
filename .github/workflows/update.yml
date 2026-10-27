@@ -81,6 +81,13 @@ jobs:
       - name: Build static site
         run: python scripts/build_site.py --out site_out
 
+      - name: Health check (labels, climatology level, 06z/18z model rule)
+        run: python scripts/check_site.py
+
+      - name: Health check (deployed site)
+        continue-on-error: true
+        run: python scripts/check_site.py --online
+
       - name: Sanity check
         run: |
           test -f site_out/index.html

@@ -34,6 +34,15 @@ TABS = [("physics", "Physics-based"),
         ("ensembles", "Ensembles (members)")]
 
 
+def cycle_label(cycle):
+    """'18z 26 Oct 2026' - the cycle hour, NOT the day of the month."""
+    try:
+        d = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}Z")
+        return f"{d.strftime('%H')}z {d.strftime('%d %b %Y')}"
+    except Exception:
+        return f"{cycle[8:10]}z {cycle}"
+
+
 def step_times(steps, cycle):
     """step hours -> datetimes for a run cycle (YYYYMMDDHH)."""
     t0 = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}:00")
@@ -169,10 +178,9 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
         "ensembles": f"{'  •  '.join(parts)}  {dom} Zonal Mean Zonal Wind",
     }
     try:
-        d = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}Z")
-        when = f"{d.strftime('%H')}z {d.strftime('%d %b %Y')}"
+        when = cycle_label(cycle)
     except Exception:
-        when = f"{cycle[8:10]}z {cycle}"
+        when = cycle
     sub = (f"{when}   •   ERA5 1991–2020 climatology   •   "
            f"{level} hPa   •   analysis {analysis:.1f} m/s")
     _finish(fig, ax, titles[tab], sub, tmin, tmax, (-45, 45))

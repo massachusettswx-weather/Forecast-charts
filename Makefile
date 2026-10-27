@@ -5,7 +5,7 @@ CYC     ?= 1200
 LEVEL   ?= 10
 LAT     ?= 60
 
-.PHONY: help venv sync sync-quick render site serve cache-clean clean test
+.PHONY: help venv sync sync-quick render site serve cache-clean clean test key deploy check status
 
 help:
 	@echo "make venv        - create the virtualenv and install deps"
@@ -15,6 +15,10 @@ help:
 	@echo "make site        - build the static site into site_out/"
 	@echo "make serve       - run the FastAPI app on :8000"
 	@echo "make cache-clean - drop the raw ERA5 cache (keep the slim copy)"
+	@echo "make key         - restore the GitHub deploy key (after a home reset)"
+	@echo "make deploy      - restore the key and push to main (Pages redeploys)"
+	@echo "make check       - production health check (store + deployed site)"
+	@echo "make status      - what the store currently holds"
 
 venv:
 	python3 -m venv venv
@@ -35,6 +39,22 @@ site:
 
 serve:
 	$(PY) -m uvicorn webapp.app:app --host 0.0.0.0 --port 8000
+
+# --- deploy plumbing -------------------------------------------------------
+# The private key lives on the persistent volume; /root/.ssh is disposable.
+# `make key` restores it (and prints what to add if the key itself is gone).
+key:
+	@bash scripts/restore_key.sh
+
+deploy: key
+	git push origin main
+	@echo "-> watch the run: https://github.com/massachusettswx-weather/Forecast-charts/actions"
+
+check:
+	$(PY) scripts/check_site.py --online
+
+status:
+	$(PY) scripts/pipeline.py list
 
 cache-clean:
 	rm -rf data/era5_cache data/idx

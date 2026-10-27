@@ -480,7 +480,9 @@ def _sync(level, lat, only, members, force):
         return sorted(models_for_cycle(cyc))
 
     cycle_models = {c: cycle_model_list(c) for c in cycles}
+    import render as _render
     latest = {"cycle": cycle, "level": level, "lat": lat,
+              "cycle_label": _render.cycle_label(cycle),
               "updated": datetime.now(timezone.utc).isoformat(),
               "figures": {os.path.basename(p): f"/fig/{os.path.basename(p)}" for p in outs},
               "cycles": cycles,
