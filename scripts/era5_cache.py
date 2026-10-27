@@ -204,9 +204,12 @@ if __name__ == "__main__":
     ap.add_argument("--end", default="11-09")
     ap.add_argument("--level", type=int, default=10)
     ap.add_argument("--lat", type=float, default=60.0)
+    ap.add_argument("--years", default=None, help="e.g. 1991-2020 (default 1991-2020)")
+    ap.add_argument("--hour", type=int, default=12)
     a = ap.parse_args()
     if a.cmd == "build":
-        build(a.start, a.end)
+        years = range(int(a.years.split("-")[0]), int(a.years.split("-")[1]) + 1) if a.years else range(1991, 2021)
+        build(a.start, a.end, years=years, hour=a.hour)
     elif a.cmd == "clim":
         mean, std, cnt = climatology(a.level, lat=a.lat, start=a.start, end=a.end)
         print(pd.DataFrame({"mean": mean, "std": std, "n": cnt}).to_string())
