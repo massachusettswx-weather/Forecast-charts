@@ -43,6 +43,19 @@ wakes 4× a day for ~10 minutes.
    You can also trigger it on demand: **Actions → update-forecast-charts →
    Run workflow**.
 
+### If the sandbox home is reset
+
+`/root/.ssh` can be wiped between sessions. The private key also lives at
+`/workspace/.home/.ssh/github_deploy` (persistent volume) - restore with:
+
+```bash
+mkdir -p /root/.ssh && chmod 700 /root/.ssh
+cp -n /workspace/.home/.ssh/github_deploy* /root/.ssh/
+chmod 600 /root/.ssh/github_deploy
+```
+
+(The public key stays registered on GitHub, so nothing needs re-adding there.)
+
 ### What the workflow does each cycle
 
 ```
