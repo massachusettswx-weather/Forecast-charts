@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/update.yml"
+      - ".github/workflows/**"
       - "scripts/**"
       - "webapp/**"
       - "Makefile"
