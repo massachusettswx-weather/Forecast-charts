@@ -61,7 +61,7 @@
       <span class="pill {{ 'fresh' if age_hours is not none and age_hours < 8 else 'stale' }}">{{ when }}</span>
       &nbsp;·&nbsp; valid {{ valid_from }} → {{ valid_to }}
       &nbsp;·&nbsp; updated {{ age_hours }} h ago
-      &nbsp;·&nbsp; ERA5 1991–2020 climatology
+      &nbsp;·&nbsp; ERA5 1991–2020 climatology{{ partial_badge }}
     {% else %}
       <span class="pill">waiting for the first run</span>
     {% endif %}

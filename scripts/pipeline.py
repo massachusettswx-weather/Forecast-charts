@@ -51,6 +51,11 @@ MODELS = {
 TABS = [("physics", "Physics-based"), ("ai", "AI"),
         ("hybrid", "Hybrid (physics + AI)"), ("ensembles", "Ensembles (members)")]
 
+# models that must be present for a complete cycle, and the slow extras
+CORE = ("aifs-ens", "aifs-single", "ifs", "eps", "gfs", "gefs", "gefs_ctl")
+EXTRA = ("gefs_members",)
+ALL_MODELS = CORE + EXTRA
+
 
 def sh(cmd, env=None):
     e = dict(os.environ)
@@ -171,13 +176,13 @@ def fetch_model(model, date, cyc, level):
         log(f"  {model}: seeded from data/")
         return out
     if model == "aifs-ens":
-        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(4), LEVEL=str(level), OUT=out)
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level), OUT=out)
         rc, so, se = sh([PY, os.path.join(HERE, "fetch_aifs.py")], env)
     elif model == "aifs-single":
-        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(4), LEVEL=str(level), OUT=out)
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level), OUT=out)
         rc, so, se = sh([PY, os.path.join(HERE, "fetch_aifs_single.py")], env)
     elif model in ("eps", "ifs"):
-        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(4), LEVEL=str(level))
+        env = dict(RUN_DATE=date, CYCLE=cyc.zfill(2) + "00", LEVEL=str(level))
         mode = "eps" if model == "eps" else "control"
         rc, so, se = sh([PY, os.path.join(HERE, "fetch_eps.py"), "--mode", mode], env)
         src = (f"eps_{run}00_u{level}.npz" if model == "eps" else f"ifs_ctl_{run}00_u{level}.npz")
@@ -274,6 +279,16 @@ def _series_for_tab(tab, cycle, level, lat):
     return S
 
 
+def available_models(cycle, level):
+    return {m for m in ALL_MODELS if os.path.exists(series_path(m, cycle, level))}
+
+
+def cycle_deadline(cycle):
+    """9 h after the model initialisation = when we publish even if incomplete."""
+    t0 = datetime.strptime(cycle, "%Y%m%d%H")
+    return t0 + timedelta(hours=9)
+
+
 def render_all(cycle, level, lat):
     import render
     S = _series_for_tab("ensembles", cycle, level, lat)   # superset: includes members
@@ -363,13 +378,33 @@ def _sync(level, lat, only, members, force):
         log("no cycles available")
         return
     cycle = max(counts, key=lambda c: counts[c])
-    have = [f for f in os.listdir(FIGDIR) if f"_{cycle}_" in f]
-    if have and not force and len(have) >= 4:
-        log(f"cycle {cycle} already rendered ({len(have)} figures) - skipping render")
-        outs = [os.path.join(FIGDIR, f) for f in have if f.endswith(".png")]
+    have = available_models(cycle, level)
+    core_ok = set(CORE) <= have
+    past_deadline = datetime.utcnow() >= cycle_deadline(cycle)
+
+    st = json.load(open(stf)) if os.path.exists(stf) else {}
+    rendered = st.get("rendered_models", {})
+    prev = set(rendered.get(cycle, []))
+    changed = prev != have
+
+    if not force and not changed and prev:
+        log(f"cycle {cycle}: model set unchanged ({len(have)} models) - nothing to do")
+        outs = [os.path.join(FIGDIR, f) for f in os.listdir(FIGDIR)
+                if f"_{cycle}_" in f and f.endswith(".png")]
+    elif not core_ok and not past_deadline:
+        missing = sorted(set(CORE) - have)
+        log(f"cycle {cycle}: waiting for {len(missing)} more model(s) "
+            f"({', '.join(missing)}) - not publishing a partial cycle")
+        return
     else:
-        log(f"rendering cycle {cycle} (models present: {counts[cycle]})")
+        tag = "complete" if core_ok else "PARTIAL (deadline reached)"
+        log(f"rendering cycle {cycle} [{tag}] - models: {', '.join(sorted(have))}")
         outs = render_all(cycle, level, lat)
+        rendered[cycle] = sorted(have)
+        st["rendered_models"] = rendered
+        st["rendered_cycle"] = cycle
+        st["partial"] = not core_ok
+        json.dump(st, open(stf, "w"), indent=2)
 
     # history: keep the last KEEP cycles of figures
     KEEP = 14

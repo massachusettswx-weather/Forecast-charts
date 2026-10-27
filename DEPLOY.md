@@ -64,6 +64,14 @@ chmod 600 /root/.ssh/github_deploy
 
 ### What the workflow does each cycle
 
+Two schedules fire the same workflow:
+- **every 15 min** — light poll; publishes as soon as the model set for a cycle
+  is complete, and re-publishes when a late member arrives;
+- **03/09/15/21 UTC** — 9 h after each initialisation; the deadline sweep that
+  publishes even if a product is still missing (the page is flagged `PARTIAL`).
+
+Both are cheap: a poll that finds nothing new exits in seconds.
+
 ```
 resolve newest cycle (ECMWF + NCEP, by direct date probing)
   -> fetch only the series that are missing (AIFS ENS/Single, IFS, EPS, GFS, GEFS)

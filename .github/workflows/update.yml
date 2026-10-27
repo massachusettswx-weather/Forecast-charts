@@ -1,8 +1,17 @@
 name: update-forecast-charts
 
-# 4x daily, eight hours after each initialisation = two hours after each suite
-# is disseminated:  00Z suite -> 08Z | 06Z -> 14Z | 12Z -> 20Z | 18Z -> 02Z
+# Two schedules:
+#  * every 15 min  - light poll. The pipeline publishes as soon as every model
+#                     for a cycle has landed (and re-publishes if a late
+#                     ensemble member arrives), so the page is never stale.
+#  * 03/09/15/21Z  - 9 h after each model initialisation (= 3 h after the next
+#                     cycle's analysis). This is the deadline sweep: it
+#                     guarantees a rebuild even if the poll was delayed, and it
+#                     is the backstop for products that arrive late.
 on:
+  schedule:
+    - cron: "*/15 * * * *"
+    - cron: "0 3,9,15,21 * * *"
   push:
     branches: [main]
     paths:
@@ -12,8 +21,6 @@ on:
       - "Makefile"
       - "requirements.txt"
       - ".gitignore"
-  schedule:
-    - cron: "0 3,9,15,21 * * *"
   workflow_dispatch:
     inputs:
       level:

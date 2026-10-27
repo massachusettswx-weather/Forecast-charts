@@ -77,6 +77,9 @@ def index(request: Request):
         except Exception:
             labels[c] = c
     when = labels.get(cyc, cyc)
+    stf = os.path.join(STORE, "status.json")
+    _st = json.load(open(stf)) if os.path.exists(stf) else {}
+    partial_badge = " \u2022 PARTIAL" if _st.get("partial") and _st.get("rendered_cycle") == cyc else ""
     age_h = None
     try:
         upd = datetime.fromisoformat(d.get("updated", ""))
@@ -97,7 +100,7 @@ def index(request: Request):
         "cycle_list": cyc_list, "cycle_labels": labels,
         "cycles_json": json.dumps(cycles),
         "age_hours": age_h, "valid_from": valid_from, "valid_to": valid_to,
-        "sources": SOURCES,
+        "sources": SOURCES, "partial_badge": partial_badge,
     })
 
 

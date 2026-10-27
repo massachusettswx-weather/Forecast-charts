@@ -73,6 +73,9 @@ def main():
         except Exception:
             labels[c] = c
     when = labels.get(cyc, cyc)
+    stf = os.path.join(STORE, "status.json")
+    _st = json.load(open(stf)) if os.path.exists(stf) else {}
+    partial_badge = " \u2022 PARTIAL" if _st.get("partial") and _st.get("rendered_cycle") == cyc else ""
     try:
         upd = datetime.fromisoformat(latest.get("updated", ""))
         age_h = int((datetime.now(timezone.utc) - upd).total_seconds() // 3600)
@@ -96,7 +99,7 @@ def main():
                       cycle_list=cyc_list, cycle_labels=labels,
                       cycles_json=_json.dumps(cycles),
                       age_hours=age_h, valid_from=valid_from, valid_to=valid_to,
-                      sources=SOURCES)
+                      sources=SOURCES, partial_badge=partial_badge)
     with open(os.path.join(out, "index.html"), "w") as fh:
         fh.write(html)
     json.dump(latest, open(os.path.join(out, "latest.json"), "w"), indent=2)

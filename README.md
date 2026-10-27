@@ -57,6 +57,16 @@ systemd + nginx is the alternative if you would rather serve the FastAPI app.
 
 ## How the automation works
 
+**Fluid publishing.** A light poll runs every 15 minutes. Each pass resolves the
+newest published cycle, fetches only the series that are missing, and compares
+the set of models it now has against the set it last published. The page is
+rebuilt the moment that set changes — so a late ensemble member triggers a
+re-publish instead of waiting for the next scheduled run. A cycle is only
+published once **every** model (AIFS ENS, AIFS Single, ECMWF EPS + IFS control,
+GFS, GEFS mean + control) has landed; if something is still missing at the
+9-hour deadline the page goes up anyway, flagged `PARTIAL`. The 03/09/15/21 UTC
+schedule remains as the deadline sweep and backstop.
+
 ```
 every 4 h (02/08/14/20 UTC)
    └─ resolve the newest published cycle   (ECMWF + NCEP, by direct probing)
