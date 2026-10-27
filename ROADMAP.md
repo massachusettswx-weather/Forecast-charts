@@ -9,7 +9,7 @@ range) + a **run store** (raw archive → normalised series → figures) + the
 
 | # | section | reference image | data needed | state |
 |---|---|---|---|---|
-| 1 | **Now** — 60N zonal-mean zonal wind at 10 hPa, every system on one graph, members + mean + control, ERA5 climatology | pic 2 | ECMWF AIFS ENS/Single, ECMWF EPS/IFS, NOAA GFS/GEFS | ✅ live |
+| 1 | **Now** — 60N zonal-mean zonal wind at 10 hPa, every system on one graph, members + mean + control, ERA5 climatology | pic 2 | ECMWF AIFS ENS/Single, ECMWF EPS/IFS (00z/12z only), NOAA GFS/GEFS | ✅ live |
 | 2 | **Members** — all ensembles' member spaghetti side by side | pic 2 | same | ✅ live |
 | 3 | **SSW watch** — member-based probability that 60N/10 hPa zonal wind goes easterly (<0 m/s) | pic 5 | member series (in hand ✅) | ⬜ |
 | 4 | **Time–height anomalies** — normalised GPH / polar-cap temperature anomaly cross-section, ERA5 analysis + forecast | pics 1 & 6 | ERA5 `geopotential`, `temperature` (ARCO ✅), NCEP CORE for 1948– | ⬜ |

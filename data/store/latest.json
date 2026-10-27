@@ -1,13 +1,13 @@
 {
-  "cycle": "2026102612",
+  "cycle": "2026102618",
   "level": 10,
   "lat": 60.0,
-  "updated": "2026-10-26T23:44:31.823133+00:00",
+  "updated": "2026-10-27T02:48:44.306182+00:00",
   "figures": {
-    "ai_2026102612_u10_60.png": "/fig/ai_2026102612_u10_60.png",
-    "ensembles_2026102612_u10_60.png": "/fig/ensembles_2026102612_u10_60.png",
-    "hybrid_2026102612_u10_60.png": "/fig/hybrid_2026102612_u10_60.png",
-    "physics_2026102612_u10_60.png": "/fig/physics_2026102612_u10_60.png"
+    "physics_2026102618_u10_60.png": "/fig/physics_2026102618_u10_60.png",
+    "ai_2026102618_u10_60.png": "/fig/ai_2026102618_u10_60.png",
+    "hybrid_2026102618_u10_60.png": "/fig/hybrid_2026102618_u10_60.png",
+    "ensembles_2026102618_u10_60.png": "/fig/ensembles_2026102618_u10_60.png"
   },
   "cycles": {
     "2026102612": {
@@ -15,6 +15,12 @@
       "ensembles": "ensembles_2026102612_u10_60.png",
       "hybrid": "hybrid_2026102612_u10_60.png",
       "physics": "physics_2026102612_u10_60.png"
+    },
+    "2026102618": {
+      "ai": "ai_2026102618_u10_60.png",
+      "ensembles": "ensembles_2026102618_u10_60.png",
+      "hybrid": "hybrid_2026102618_u10_60.png",
+      "physics": "physics_2026102618_u10_60.png"
     }
   },
   "models": {

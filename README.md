@@ -19,6 +19,13 @@ bold ensemble mean and control on top.*
 | **Hybrid** | every model on one graph — physics and AI together |
 | **Ensembles** | member spaghetti for each ensemble, with mean + control |
 
+**Which models appear depends on the cycle:** the **06z and 18z suites carry no
+ECMWF control (IFS) and no ECMWF EPS** — those products publish late and aren't
+part of those cycles — so those charts show AIFS + GFS/GEFS only. The 00z and
+12z suites include the ECMWF control and EPS. Chart titles and legends are built
+from the models actually present, so they never advertise a system that isn't
+plotted.
+
 Refreshed **four times daily** at 03, 09, 15 and 21 UTC — nine hours after each
 model initialisation, i.e. three hours after the next cycle's analysis
 (00Z init → 09Z, 06Z → 15Z, 12Z → 21Z, 18Z → 03Z). The cron is UTC and never

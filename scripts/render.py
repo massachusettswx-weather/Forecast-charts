@@ -82,6 +82,7 @@ def _finish(fig, ax, title, sub, tmin, tmax, ylim):
 
 def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
     """S: dict of series -> (times, values)."""
+    cyc_h = cycle[8:10]
     fig, ax = plt.subplots(figsize=(13.5, 7.6))
     S = {k: (step_times(v[0], cycle), v[1]) for k, v in S.items()}
     tmin = min(v[0][0] for v in S.values())
@@ -95,9 +96,9 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
 
     order = []
     if tab in ("physics", "hybrid"):
-        order += [("gefs_mean", "NOAA GEFS 12z mean", C["gefs_mean"], "s", "-"),
-                  ("gefs_ctl", "NOAA GEFS 12z control (gec00)", C["gefs_ctl"], "s", "-"),
-                  ("gfs", "NOAA GFS 12z (deterministic)", C["gfs"], "^", "-")]
+        order += [("gefs_mean", f"NOAA GEFS {cyc_h}z mean", C["gefs_mean"], "s", "-"),
+                  ("gefs_ctl", f"NOAA GEFS {cyc_h}z control (gec00)", C["gefs_ctl"], "s", "-"),
+                  ("gfs", f"NOAA GFS {cyc_h}z (deterministic)", C["gfs"], "^", "-")]
     if tab in ("physics", "hybrid"):
         order += [("eps_mean", "ECMWF EPS 12z ens mean", C["eps_mean"], "D", "-"),
                   ("ifs_ctl", "ECMWF IFS 12z control (EPS ctl)", C["ifs_ctl"], "D", "-")]
@@ -144,11 +145,28 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
         ax.legend(loc="lower left", frameon=True, framealpha=0.95, fontsize=9.6)
 
     dom = f"{lat:.0f}˚N"
+    # title reflects only the models that are actually in this figure
+    has = lambda k: k in S
+    parts = []
+    if tab in ("physics", "hybrid"):
+        if has("ifs_ctl") or has("eps_mean"):
+            parts.append("ECMWF IFS + EPS")
+        if has("gefs_mean") or has("gfs"):
+            parts.append("NOAA GFS + GEFS")
+    if tab in ("ai", "hybrid"):
+        if has("aifs_mean") or has("aifs_single"):
+            parts.append("ECMWF AIFS ENS + Single")
+    if tab == "ensembles":
+        bits = []
+        if has("aifs_mean"): bits.append("AIFS ENS")
+        if has("eps_mean"): bits.append("ECMWF EPS")
+        if has("gefs_mean"): bits.append("NOAA GEFS")
+        parts.append("Ensemble members: " + " / ".join(bits) if bits else "Ensemble members")
     titles = {
-        "physics": f"ECMWF IFS + EPS  •  NOAA GFS + GEFS  {dom} Zonal Mean Zonal Wind",
-        "ai": f"ECMWF AIFS ENS + Single  {dom} Zonal Mean Zonal Wind",
-        "hybrid": f"ECMWF AIFS ENS + EPS  •  NOAA GFS + GEFS  {dom} Zonal Mean Zonal Wind",
-        "ensembles": f"Ensemble members  {dom} Zonal Mean Zonal Wind",
+        "physics": f"{'  •  '.join(parts)}  {dom} Zonal Mean Zonal Wind",
+        "ai": f"{'  •  '.join(parts)}  {dom} Zonal Mean Zonal Wind",
+        "hybrid": f"{'  •  '.join(parts)}  {dom} Zonal Mean Zonal Wind",
+        "ensembles": f"{'  •  '.join(parts)}  {dom} Zonal Mean Zonal Wind",
     }
     try:
         when = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}Z").strftime("%dz %d %b %Y")

@@ -56,6 +56,21 @@ CORE = ("aifs-ens", "aifs-single", "ifs", "eps", "gfs", "gefs", "gefs_ctl")
 EXTRA = ("gefs_members",)
 ALL_MODELS = CORE + EXTRA
 
+# The 06z and 18z suites carry no ECMWF control (IFS) and no ECMWF EPS:
+# those products publish late and are not part of those cycles.
+NO_ECMWF_OPS = ("ifs", "eps")
+
+
+def cycle_hour(cycle):
+    return int(cycle[8:10])
+
+
+def models_for_cycle(cycle):
+    """Models included for a given cycle."""
+    if cycle_hour(cycle) in (6, 18):
+        return tuple(m for m in ALL_MODELS if m not in NO_ECMWF_OPS)
+    return ALL_MODELS
+
 
 def sh(cmd, env=None):
     e = dict(os.environ)
@@ -217,6 +232,7 @@ def fetch_gefs_control(date, cyc, level):
 def _series_for_tab(tab, cycle, level, lat):
     """Collect the series each tab needs from the store."""
     run = cycle
+    allowed = set(models_for_cycle(cycle))
     S = {}
 
     def add(key, path, member=None, zonal=True, lat_idx=None):
@@ -238,7 +254,13 @@ def _series_for_tab(tab, cycle, level, lat):
             S[key] = (t, prof)
 
     def p(model):
+        if model not in allowed:
+            return None
         return series_path(model, run, level)
+
+    def has(model):
+        path = p(model)
+        return bool(path) and os.path.exists(path)
 
     add("aifs_mean", p("aifs-ens"), member="ctl")
     add("aifs_ctl", p("aifs-ens"), member="ctl")
@@ -253,7 +275,7 @@ def _series_for_tab(tab, cycle, level, lat):
         add("eps_members", p("eps"), member="members")
         add("gefs_members", p("gefs_members"), member="members")
     # aifs mean/control need separate extraction below
-    if os.path.exists(p("aifs-ens")):
+    if has("aifs-ens"):
         d = np.load(p("aifs-ens"), allow_pickle=True)
         z = d["zonal"]; lats = d["lats"]; i = int(np.abs(lats - lat).argmin())
         t = d["steps"]
@@ -263,13 +285,13 @@ def _series_for_tab(tab, cycle, level, lat):
         S["aifs_ctl"] = (t, prof[:, 0])
         if tab == "ensembles":
             S["aifs_ens_members"] = (t, prof[:, pert])      # (nstep, nmember)
-    if os.path.exists(p("eps")):
+    if has("eps"):
         d = np.load(p("eps"), allow_pickle=True)
         S["eps_mean"] = (d["steps"], d["u60"])
         if "zonal" in d:
             z = d["zonal"]; lats = d["lats"]; i = int(np.abs(lats - lat).argmin())
             S["eps_members"] = (d["steps"], z[:, :, i])
-    if os.path.exists(p("ifs")):
+    if has("ifs"):
         d = np.load(p("ifs"), allow_pickle=True)
         S["ifs_ctl"] = (d["steps"], d["u60"])
     for key in ("aifs_ens_members", "eps_members", "gefs_members"):
@@ -280,7 +302,8 @@ def _series_for_tab(tab, cycle, level, lat):
 
 
 def available_models(cycle, level):
-    return {m for m in ALL_MODELS if os.path.exists(series_path(m, cycle, level))}
+    return {m for m in models_for_cycle(cycle)
+            if os.path.exists(series_path(m, cycle, level))}
 
 
 def cycle_deadline(cycle):
@@ -352,7 +375,11 @@ def _sync(level, lat, only, members, force):
 
     # ECMWF models (AIFS ENS/Single, IFS control, EPS) share the ECMWF cycle
     if ec_date:
+        ec_models = models_for_cycle(f"{ec_date}{ec_cyc}")
         for m in ("aifs-ens", "aifs-single", "ifs", "eps"):
+            if m not in ec_models:
+                log(f"  {m}: not part of the {ec_cyc}z suite - skipped")
+                continue
             if only and m not in only:
                 continue
             fetch_model(m, ec_date, ec_cyc, level)
@@ -379,7 +406,8 @@ def _sync(level, lat, only, members, force):
         return
     cycle = max(counts, key=lambda c: counts[c])
     have = available_models(cycle, level)
-    core_ok = set(CORE) <= have
+    wanted = models_for_cycle(cycle)
+    core_ok = set(wanted) - set(EXTRA) <= have
     past_deadline = datetime.utcnow() >= cycle_deadline(cycle)
 
     st = json.load(open(stf)) if os.path.exists(stf) else {}
@@ -392,7 +420,7 @@ def _sync(level, lat, only, members, force):
         outs = [os.path.join(FIGDIR, f) for f in os.listdir(FIGDIR)
                 if f"_{cycle}_" in f and f.endswith(".png")]
     elif not core_ok and not past_deadline:
-        missing = sorted(set(CORE) - have)
+        missing = sorted((set(wanted) - set(EXTRA)) - have)
         log(f"cycle {cycle}: waiting for {len(missing)} more model(s) "
             f"({', '.join(missing)}) - not publishing a partial cycle")
         return
