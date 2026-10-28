@@ -565,13 +565,20 @@ def _sync(level, lat, only, members, force):
     for c in (cyc_ec, cyc_gfs, cyc_gefs):
         if c and c not in candidate_cycles:
             candidate_cycles.append(c)
-    for c in candidate_cycles:
+    candidate_cycles.sort(reverse=True)      # newest first
+    for idx, c in enumerate(candidate_cycles):
         date, cyc = c[:8], c[8:]
         allowed = models_for_cycle(c)
         for m in allowed:
             if m in EXTRA and not members:
                 continue
             if only and m not in only:
+                continue
+            # the EPS members are ~3000 large files; only the newest cycle
+            # needs them (an older one was published earlier and its series
+            # are already in the store)
+            if m == "eps" and idx > 0 and not os.path.exists(
+                    series_path(m, c, level)):
                 continue
             try:
                 if m in ECMWF_MODELS:
