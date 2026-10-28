@@ -69,3 +69,35 @@ def segments(state):
             else:
                 i += 1
     return segs
+
+
+def reversal_segments(u, min_hours=24, step_hours=STEP_HOURS):
+    """The easterly stretches that satisfy the 24 h criterion.
+
+    Returns (member, start_index, end_index) per segment, where the start is
+    the first easterly step of the run that contains the qualifying 24 h
+    window (not the fourth step of it) - the highlight should show the whole
+    reversal, not just the part that already satisfies the criterion.
+    """
+    u = np.asarray(u, float)
+    below = u < 0.0
+    state = easterly_state(u, min_hours, step_hours)
+    out = []
+    for m in range(below.shape[1]):
+        s = state[:, m]
+        b = below[:, m]
+        i = 0
+        while i < len(s):
+            if s[i]:
+                j = i
+                while j + 1 < len(s) and s[j + 1]:
+                    j += 1
+                # walk back to the start of the underlying easterly run
+                k = i
+                while k > 0 and b[k - 1]:
+                    k -= 1
+                out.append((m, k, j))
+                i = j + 1
+            else:
+                i += 1
+    return out

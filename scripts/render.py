@@ -253,6 +253,7 @@ def render_ssw(S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
     ax.plot(cts, clim, color=C["clim"], lw=2.6, zorder=6, label="ERA5 1991-2020 climatology")
 
     summary = []
+    rev_proxy = None
     for key, label, col in present:
         times, prof = S[key]
         times = pd.DatetimeIndex(np.asarray(times))
@@ -261,10 +262,18 @@ def render_ssw(S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
         # members
         for j in range(u.shape[1]):
             ax.plot(times, u[:, j], color=col, lw=0.7, alpha=0.30, zorder=2)
-        # the 24 h-easterly stretches, drawn heavy
-        for m, i, j in SSW.segments(state):
-            ax.plot(times[i:j + 1], u[i:j + 1, m], color=col, lw=2.4, alpha=0.95,
-                    zorder=5, solid_capstyle="butt")
+        # the members that meet the 24 h criterion: instead of one heavy line
+        # per member (which reads as broken lines), shade the envelope they
+        # span - the depth of the reversal, in one clean band
+        segs = SSW.reversal_segments(u, SSW_MIN_HOURS)
+        env_lo = np.full(len(times), np.nan)
+        env_hi = np.full(len(times), np.nan)
+        for m, i, j in segs:
+            env_lo[i:j + 1] = np.fmin(env_lo[i:j + 1], u[i:j + 1, m])
+            env_hi[i:j + 1] = np.fmax(env_hi[i:j + 1], u[i:j + 1, m])
+        if np.isfinite(env_lo).any():
+            ax.fill_between(times, env_lo, env_hi, color=col, alpha=0.18, lw=0,
+                            zorder=4)
         # ensemble mean
         ax.plot(times, u.mean(axis=1), color=col, lw=2.8, zorder=7,
                 label=f"{label} mean")
@@ -278,6 +287,10 @@ def render_ssw(S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
         axp.plot(times, prob, color=col, lw=2.6, marker="o", markersize=3.4,
                  markerfacecolor=col, markeredgecolor="none", zorder=8,
                  label=f"{label} ({u.shape[1]} members){first_txt}")
+        if rev_proxy is None:
+            rev_proxy = ax.fill_between([], [], [], color="#555555", alpha=0.18,
+                                        lw=0, zorder=4,
+                                        label="members easterly for 24 h or more")
         on = onsets[onsets >= 0]
         first = int(on.min()) if len(on) else None
         summary.append((label, col, prob, first, len(on), u.shape[1]))

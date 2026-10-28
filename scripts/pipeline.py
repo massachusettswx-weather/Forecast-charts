@@ -425,6 +425,11 @@ def available_models(cycle, level):
 # bump when the fetch format changes (the store is re-rendered then)
 DATA_VERSION = 3
 
+# bump when the FIGURE STYLE changes - the charts are re-rendered even if the
+# data did not change (otherwise a style fix would only reach the site when
+# the next cycle arrives)
+RENDER_VERSION = 2
+
 
 def series_signature(cycle, level):
     """(model, last step) for every model in the store.
@@ -438,7 +443,8 @@ def series_signature(cycle, level):
         p = series_path(m, cycle, level)
         if os.path.exists(p):
             out.append((m, series_max_step(p)))
-    rendered = (DATA_VERSION, tuple(LATS), tuple(t for t, _ in TABS) + ("ssw",))
+    rendered = (DATA_VERSION, RENDER_VERSION, tuple(LATS),
+                tuple(t for t, _ in TABS) + ("ssw",))
     return (rendered, tuple(sorted(out)))
 
 
