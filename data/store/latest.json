@@ -1,34 +1,13 @@
 {
-  "cycle": "2026102712",
+  "cycle": "2026102718",
   "level": 10,
   "lat": "cap",
-  "cycle_label": "12z 27 Oct 2026",
-  "updated": "2026-10-27T23:37:26.286989+00:00",
-  "figures": {
-    "physics_2026102712_u10_60.png": "/fig/physics_2026102712_u10_60.png",
-    "ai_2026102712_u10_60.png": "/fig/ai_2026102712_u10_60.png",
-    "hybrid_2026102712_u10_60.png": "/fig/hybrid_2026102712_u10_60.png",
-    "ensembles_2026102712_u10_60.png": "/fig/ensembles_2026102712_u10_60.png",
-    "ssw_2026102712_u10_60.png": "/fig/ssw_2026102712_u10_60.png",
-    "physics_2026102712_u10_70.png": "/fig/physics_2026102712_u10_70.png",
-    "ai_2026102712_u10_70.png": "/fig/ai_2026102712_u10_70.png",
-    "hybrid_2026102712_u10_70.png": "/fig/hybrid_2026102712_u10_70.png",
-    "ensembles_2026102712_u10_70.png": "/fig/ensembles_2026102712_u10_70.png",
-    "ssw_2026102712_u10_70.png": "/fig/ssw_2026102712_u10_70.png",
-    "physics_2026102712_u10_0.png": "/fig/physics_2026102712_u10_0.png",
-    "ai_2026102712_u10_0.png": "/fig/ai_2026102712_u10_0.png",
-    "hybrid_2026102712_u10_0.png": "/fig/hybrid_2026102712_u10_0.png",
-    "ensembles_2026102712_u10_0.png": "/fig/ensembles_2026102712_u10_0.png",
-    "ssw_2026102712_u10_0.png": "/fig/ssw_2026102712_u10_0.png",
-    "physics_2026102712_u10_cap.png": "/fig/physics_2026102712_u10_cap.png",
-    "ai_2026102712_u10_cap.png": "/fig/ai_2026102712_u10_cap.png",
-    "hybrid_2026102712_u10_cap.png": "/fig/hybrid_2026102712_u10_cap.png",
-    "ensembles_2026102712_u10_cap.png": "/fig/ensembles_2026102712_u10_cap.png",
-    "ssw_2026102712_u10_cap.png": "/fig/ssw_2026102712_u10_cap.png"
-  },
+  "cycle_label": "18z 27 Oct 2026",
+  "updated": "2026-10-28T00:36:02.810331+00:00",
+  "figures": {},
   "cycles": {
     "2026102612": {
-      "60": {
+      "60|10": {
         "ai": "ai_2026102612_u10_60.png",
         "ensembles": "ensembles_2026102612_u10_60.png",
         "hybrid": "hybrid_2026102612_u10_60.png",
@@ -36,7 +15,7 @@
       }
     },
     "2026102618": {
-      "60": {
+      "60|10": {
         "ai": "ai_2026102618_u10_60.png",
         "ensembles": "ensembles_2026102618_u10_60.png",
         "hybrid": "hybrid_2026102618_u10_60.png",
@@ -45,7 +24,7 @@
       }
     },
     "2026102700": {
-      "60": {
+      "60|10": {
         "ai": "ai_2026102700_u10_60.png",
         "ensembles": "ensembles_2026102700_u10_60.png",
         "hybrid": "hybrid_2026102700_u10_60.png",
@@ -53,7 +32,7 @@
       }
     },
     "2026102706": {
-      "60": {
+      "60|10": {
         "ai": "ai_2026102706_u10_60.png",
         "ensembles": "ensembles_2026102706_u10_60.png",
         "hybrid": "hybrid_2026102706_u10_60.png",
@@ -61,28 +40,28 @@
       }
     },
     "2026102712": {
-      "0": {
+      "0|10": {
         "ai": "ai_2026102712_u10_0.png",
         "ensembles": "ensembles_2026102712_u10_0.png",
         "hybrid": "hybrid_2026102712_u10_0.png",
         "physics": "physics_2026102712_u10_0.png",
         "ssw": "ssw_2026102712_u10_0.png"
       },
-      "60": {
+      "60|10": {
         "ai": "ai_2026102712_u10_60.png",
         "ensembles": "ensembles_2026102712_u10_60.png",
         "hybrid": "hybrid_2026102712_u10_60.png",
         "physics": "physics_2026102712_u10_60.png",
         "ssw": "ssw_2026102712_u10_60.png"
       },
-      "70": {
+      "70|10": {
         "ai": "ai_2026102712_u10_70.png",
         "ensembles": "ensembles_2026102712_u10_70.png",
         "hybrid": "hybrid_2026102712_u10_70.png",
         "physics": "physics_2026102712_u10_70.png",
         "ssw": "ssw_2026102712_u10_70.png"
       },
-      "cap": {
+      "cap|10": {
         "ai": "ai_2026102712_u10_cap.png",
         "ensembles": "ensembles_2026102712_u10_cap.png",
         "hybrid": "hybrid_2026102712_u10_cap.png",
@@ -129,14 +108,9 @@
       "gfs"
     ],
     "2026102712": [
-      "aifs-ens",
-      "aifs-single",
-      "eps",
       "gefs",
       "gefs_ctl",
-      "gefs_members",
-      "gfs",
-      "ifs"
+      "gefs_members"
     ]
   },
   "models": {
