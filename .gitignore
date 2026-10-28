@@ -3,6 +3,9 @@ data/era5_cache/
 data/idx/
 data/*.npz
 data/store/series/
+# the rendered figures are a build artifact: the Pages workflow uploads them
+# itself, and committing them every cycle bloats the repo and slows git down
+data/store/figures/
 site_out/
 logs_*.txt
 __pycache__/
