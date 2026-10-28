@@ -70,9 +70,13 @@ LAT_LABELS = site_meta.LAT_LABELS
 # level per cycle - not worth it for a chart).
 ALL_MODELS_FOR_LEVEL = ("aifs-ens", "aifs-single", "ifs", "eps", "gfs",
                          "gefs", "gefs_ctl", "gefs_members")
-CHEAP_MODELS_FOR_LEVEL = ("aifs-single", "ifs", "gfs", "gefs", "gefs_ctl")
-LEVELS = {10: ALL_MODELS_FOR_LEVEL, 3: CHEAP_MODELS_FOR_LEVEL,
-          1: CHEAP_MODELS_FOR_LEVEL}
+# Which models publish which level (checked against the archives):
+#   ECMWF IFS   1, 2, 3, 5, 7, 10 ... hPa   (all 37)
+#   NOAA GFS    1, 2, 3, 5, 7, 10, 15 ... mb (all 37)
+#   AIFS        10, 50, 100, 150, 200 ... hPa (14 levels - nothing below 10)
+#   NOAA GEFS   10, 50, 100, 200, 250 ... mb (nothing below 10)
+# so 1 hPa is the only level below 10 that more than one model carries.
+LEVELS = {10: ALL_MODELS_FOR_LEVEL, 1: ("ifs", "gfs")}
 DEFAULT_LEVEL = 10
 
 # models that must be present for a complete cycle, and the slow extras

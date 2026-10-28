@@ -34,7 +34,7 @@ LAT_ORDER = ["60", "70", "0", "cap"]
 LAT_LABELS = {k: v["label"] for k, v in DOMAINS.items()}
 
 # the levels the site offers
-LEVELS = [(10, "10 hPa"), (3, "3 hPa"), (1, "1 hPa")]
+LEVELS = [(10, "10 hPa"), (1, "1 hPa")]
 DEFAULT_LEVEL = 10
 
 

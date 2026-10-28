@@ -64,6 +64,9 @@ def fetch(url, start=None, end=None, tries=6):
             r = session().get(url, headers=hdr, timeout=(15, 240))
             if r.status_code in (200, 206):
                 return r.content
+            if r.status_code == 404:
+                # not published yet - do not retry (the caller skips the step)
+                raise RuntimeError(f"{url} http 404")
             last = f"http {r.status_code}"
         except Exception as e:  # noqa: BLE001
             last = repr(e)
