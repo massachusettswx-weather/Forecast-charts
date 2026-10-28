@@ -58,9 +58,36 @@ If the deploy key is gone from the persistent volume too, `make key` prints a
 fresh public key; add it in **Settings → Deploy keys → Add deploy key** with
 *Allow write access* ticked.
 
+## 2026-10-28 01:20Z - the render was crashing silently
+
+Symptom: the site header said `18z 27 Oct 2026` while the chart underneath was
+the 12z one, and the domain/level picker did nothing. GEFS was still drawn as a
+flat line at 60 m/s.
+
+Cause: `pipeline.render_all()` read `tabS` before it was assigned -> `NameError`
+-> every figure of every cycle failed to render. The exception was swallowed, so
+the run "succeeded", the health check only *warned* about the missing figures,
+and Pages deployed the previous cycle's PNGs under the new cycle's label.
+
+Fixes (commit `0a62ca5`):
+- `tabS` is built before it is used, and an empty tab set is skipped.
+- each figure render is wrapped: a failure is logged and stored in
+  `data/store/render_errors.log` (the store is committed, so it is visible
+  without the Actions log - the workflow logs need auth and cannot be read
+  from the sandbox).
+- the pipeline never publishes a cycle without figures: if the current cycle
+  cannot be rendered it re-renders the last published cycle, and if even that
+  fails it keeps the published `latest.json` untouched.
+- the site's view picker falls back to the newest cycle that has the view, so a
+  half-rendered cycle can never leave the picker looking broken.
+- the EPS members (~3000 large GRIB files) are only fetched for the newest
+  candidate cycle - that fetch was what made the sync take 30+ minutes.
+
 ## Next things worth doing
 
-- Level/domain selector on the site (AIFS stops at 10 hPa, IFS/EPS/GEFS reach 1 hPa).
 - Archive browser for older cycles.
 - Slack/webhook when a new cycle is published.
 - More models (METEO-FRANCE, UKMO, GenCast).
+- ERA5 long record (1959-2022) is building in the background - when it lands,
+  export a small summary artifact (monthly mean/sigma + record minimum) so the
+  runner can use it.
