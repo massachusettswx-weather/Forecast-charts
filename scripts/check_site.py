@@ -71,14 +71,17 @@ def main():
     # 1. figures on disk ---------------------------------------------------
     per_lat = (latest.get("cycles") or {}).get(cycle) or {}
     default_lat = "60|10"                   # domain|level
-    if per_lat and default_lat not in per_lat and "physics" in per_lat:
-        per_lat = {default_lat: per_lat}      # older store layout: flat
+    # the store used to be keyed by domain only ("60"); accept that too
+    if per_lat and default_lat not in per_lat and not any("|" in k for k in per_lat):
+        dom = per_lat.get("60") or next(iter(per_lat.values()))
+        per_lat = {default_lat: dom}
     figs = per_lat.get(default_lat) or {}
     for tab in ("physics", "ai", "hybrid", "ensembles"):
         f = figs.get(tab)
         check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
               f"figure present: {tab}",
-              f"figure MISSING: {tab} ({f})")
+              f"figure MISSING: {tab} ({f}) - the next poll re-renders it",
+              critical=False)
     f = figs.get("ssw")
     check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
           "figure present: ssw",
@@ -137,6 +140,37 @@ def main():
     else:
         print("  warn  no cycle_models in the store (older store?)")
 
+    # 4a. the stored series must be physically sensible ------------------------
+    # A flat line at 60 m/s is the LATITUDE array stored in the zonal slot -
+    # that bug shipped once, so it is checked from now on.
+    import numpy as np
+    seld = os.path.join(STORE, "series")
+    for model in ("aifs-ens", "aifs-single", "ifs", "eps", "gfs", "gefs",
+                  "gefs_members"):
+        p = os.path.join(seld, f"{model}_{cycle}_u10.npz")
+        if not os.path.exists(p):
+            continue
+        try:
+            d = np.load(p, allow_pickle=True)
+            if "u60" in d:
+                v = np.atleast_2d(np.asarray(d["u60"], float))
+                v0 = float(v[0].mean())
+                spread = float(v.std(axis=1).mean())
+            elif "zonal" in d:
+                lat = np.asarray(d["lats"], float)
+                i = int(np.abs(lat - 60.0).argmin())
+                z = np.asarray(d["zonal"], float)
+                v0 = float(z[0, ..., i].mean())
+                spread = float(np.std(z[:, ..., i]))
+            else:
+                continue
+            check(abs(v0) < 45 and spread > 0.3,
+                  f"{model}: u60 F000 {v0:5.1f} m/s (spread {spread:4.1f})",
+                  f"{model}: u60 F000 {v0:5.1f} m/s (spread {spread:4.1f}) - "
+                  f"IMPLAUSIBLE, the series is not a wind profile")
+        except Exception as e:
+            check(False, "", f"{model}: could not check the series ({e!r})")
+
     # 4b. the published cycle must not be stale --------------------------------
     try:
         ec_date, ec_cyc, ec_horizon = P.resolve_ecmwf()
@@ -177,6 +211,11 @@ def main():
         except Exception as e:
             check(False, "", f"deployed site unreachable: {e!r}")
 
+    if warn or bad:
+        print("\nstore layout:")
+        cyc = (latest.get("cycles") or {}).get(cycle) or {}
+        for k in sorted(cyc):
+            print(f"   {k}: {sorted(cyc[k])}")
     if warn:
         print(f"\n{len(warn)} warning(s):")
         for w in warn:

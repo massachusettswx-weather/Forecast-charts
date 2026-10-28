@@ -148,7 +148,7 @@ def main():
         off, ln = entry
         blob = get(s3(bucket, key), off, off + ln - 1)
         u60, nhm, z, lat = decode(blob)
-        return step, u60, nhm, z
+        return step, u60, nhm, z, lat
 
     t0 = time.time()
     if a.product == "gefs_members":

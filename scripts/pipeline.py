@@ -412,7 +412,7 @@ def available_models(cycle, level):
 
 
 # bump when the fetch format changes (the store is re-rendered then)
-DATA_VERSION = 2
+DATA_VERSION = 3
 
 
 def series_signature(cycle, level):
@@ -606,7 +606,15 @@ def _sync(level, lat, only, members, force):
     prev = set(rendered.get(cycle, []))
     prev_sig = tuple(tuple(x) for x in st.get("rendered_sig", {}).get(cycle, []))
     sig = series_signature(cycle, level)
-    changed = (prev != have) or (prev_sig != sig)
+
+    def missing_figures(cyc):
+        return [t for t, _ in TABS
+                if not os.path.exists(os.path.join(FIGDIR, f"{t}_{cyc}_u{level}_60.png"))]
+
+    changed = (prev != have) or (prev_sig != sig) or bool(missing_figures(cycle))
+    if missing_figures(cycle):
+        log(f"  cycle {cycle}: {len(missing_figures(cycle))} figure(s) missing "
+            f"-> re-rendering")
 
     if not force and not changed and prev:
         log(f"cycle {cycle}: model set unchanged ({len(have)} models) - nothing to do")
@@ -619,7 +627,10 @@ def _sync(level, lat, only, members, force):
         missing = sorted((set(wanted) - set(EXTRA)) - have)
         log(f"cycle {cycle}: waiting for {len(missing)} more model(s) "
             f"({', '.join(missing)}) - not publishing a partial cycle")
-        return
+        # the store is still written below, so its layout never goes stale
+        outs = [os.path.join(FIGDIR, f) for f in os.listdir(FIGDIR)
+                if f"_{cycle}_" in f and f.endswith(".png")]
+        changed = False
     else:
         tag = "complete" if core_ok else "PARTIAL (deadline reached)"
         log(f"rendering cycle {cycle} [{tag}] - models: {', '.join(sorted(have))}")

@@ -77,8 +77,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/store/series
-          key: series-v2-${{ github.run_id }}
-          restore-keys: series-
+          key: series-v3-${{ github.run_id }}
+          restore-keys: series-v3-
 
       - name: Cycle logic regression tests
         run: python scripts/test_cycles.py
@@ -92,7 +92,20 @@ jobs:
         run: python scripts/build_site.py --out site_out
 
       - name: Health check (labels, climatology level, 06z/18z model rule)
-        run: python scripts/check_site.py
+        run: |
+          set -o pipefail
+          python scripts/check_site.py | tee health.txt
+
+      - name: Health check summary
+        if: always()
+        run: |
+          {
+            echo "### Chart health check"
+            echo ""
+            echo '```'
+            cat health.txt 2>/dev/null || echo "(no output)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Health check (deployed site)
         continue-on-error: true
