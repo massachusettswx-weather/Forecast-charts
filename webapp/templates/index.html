@@ -75,11 +75,6 @@
         <option value="{{ c }}" {{ 'selected' if c == cycle else '' }}>{{ cycle_labels.get(c, c) }}</option>
       {% endfor %}
     </select>
-    <select class="cycle" id="latpick" title="domain and level">
-      {% for l in lat_list %}
-        <option value="{{ l }}" {{ 'selected' if l == default_key else '' }}>{{ key_labels.get(l, l) }}</option>
-      {% endfor %}
-    </select>
   </nav>
 </header>
 
@@ -96,20 +91,6 @@
     </div>
   </section>
   {% endfor %}
-
-  <h2>Models on this chart</h2>
-  <p class="blurb" id="modelnote">{{ model_note }}</p>
-  <table class="models">
-    <tr><th>Model</th><th>Type</th><th>Tab</th><th>Source</th></tr>
-    <tbody id="modelrows">
-    {% for m in models %}
-    <tr><td><b>{{ m.label }}</b></td>
-        <td>{{ m.kind }}</td>
-        <td>{{ m.tab }}</td>
-        <td>{{ m.source }}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
 
   <h2>About the data</h2>
   <div class="grid">
@@ -134,12 +115,12 @@
   }));
 
   const CYCLES = {{ cycles_json | safe }};
-  const MODELS_BY_CYCLE = {{ models_by_cycle_json | safe }};
   const CURRENT_CYCLE = {{ cycle | tojson }};
   const pick = document.getElementById('cyclepick');
-  const latpick = document.getElementById('latpick');
   let curCycle = CURRENT_CYCLE;
-  let curLat = latpick ? latpick.value : "{{ default_lat }}";
+  // the domain/level picker is hidden for now (the other views still need
+  // checking before they are published) - the site shows the default view
+  let curLat = "{{ default_key }}";
   function figureFor(cycle, view, tab) {
     const v = (CYCLES[cycle] || {})[view] || {};
     if (v[tab]) return v[tab];
@@ -159,26 +140,9 @@
       if (img && f) img.src = 'fig/' + f;
     });
   }
-  function renderModels(c) {
-    const entry = MODELS_BY_CYCLE[c] || {rows: [], note: ''};
-    const tbody = document.getElementById('modelrows');
-    if (tbody) {
-      tbody.innerHTML = entry.rows.map(m =>
-        '<tr><td><b>' + m.label + '</b></td><td>' + m.kind + '</td><td>' +
-        m.tab + '</td><td>' + m.source + '</td></tr>').join('');
-    }
-    const note = document.getElementById('modelnote');
-    if (note) note.textContent = entry.note || '';
-  }
-  renderModels(CURRENT_CYCLE);
   applyFigures();
   if (pick) pick.addEventListener('change', () => {
     curCycle = pick.value;
-    applyFigures();
-    renderModels(curCycle);
-  });
-  if (latpick) latpick.addEventListener('change', () => {
-    curLat = latpick.value;
     applyFigures();
   });
 </script>

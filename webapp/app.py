@@ -58,15 +58,18 @@ def index(request: Request):
     cyc_list = sorted(cycles.keys(), reverse=True)
     lat_list = sorted({l for c in cycles.values() for l in c},
                        key=site_meta.key_sort_key)
+    # the site shows ONE view (the default domain and level): the other views
+    # are still being checked, so they are not offered yet
+    default_view = site_meta.store_key(site_meta.DEFAULT_LAT,
+                                       site_meta.DEFAULT_LEVEL)
     figs = []
     for key, title, blurb in TABS:
-        cand = []
+        img = None
         for c in cyc_list:
-            for l in lat_list:
-                f = (cycles.get(c, {}).get(l) or {}).get(key)
-                if f:
-                    cand.append(f)
-        img = ("/fig/" + cand[0]) if cand else None
+            f = (cycles.get(c, {}).get(default_view) or {}).get(key)
+            if f:
+                img = "/fig/" + f
+                break
         figs.append(dict(key=key, title=title, blurb=blurb, img=img))
     cyc = d.get("cycle")
     cycles = d.get("cycles", {}) or {cyc: {"60": {}}}
@@ -97,9 +100,7 @@ def index(request: Request):
     return templates.TemplateResponse(request, "index.html", {
         "tabs": figs, "cycle": cyc, "when": when,
         "updated": d.get("updated", ""), "level": d.get("level", 10),
-        "lat": d.get("lat", 60), "models": site_meta.model_rows(d, cyc),
-        "model_note": site_meta.cycle_note(cyc),
-        "models_by_cycle_json": json.dumps(site_meta.models_by_cycle(d)),
+        "lat": d.get("lat", 60),
         "lat_list": lat_list,
         "key_labels": {k: site_meta.key_label(k) for k in lat_list},
         "default_key": site_meta.store_key(site_meta.DEFAULT_LAT,

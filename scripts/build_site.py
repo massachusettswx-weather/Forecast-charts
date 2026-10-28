@@ -54,16 +54,23 @@ def main():
     cyc_list = sorted(cycles.keys(), reverse=True)
     lat_list = sorted({l for c in cycles.values() for l in c},
                        key=site_meta.key_sort_key)
+    # the site shows ONE view (the default domain and level): the other views
+    # are still being checked, so they are not offered yet
+    def _default_view(c):
+        for l in lat_list:
+            if l == site_meta.store_key(site_meta.DEFAULT_LAT,
+                                        site_meta.DEFAULT_LEVEL):
+                return (cycles.get(c, {}).get(l) or {})
+        return {}
     tabs = []
     for key, title, blurb in TABS:
-        cand = []
+        img = None
         for c in cyc_list:
-            for l in lat_list:
-                f = (cycles.get(c, {}).get(l) or {}).get(key)
-                if f:
-                    cand.append(f)
-        tabs.append(dict(key=key, title=title, blurb=blurb,
-                         img=("fig/" + cand[0]) if cand else None))
+            f = _default_view(c).get(key)
+            if f:
+                img = "fig/" + f
+                break
+        tabs.append(dict(key=key, title=title, blurb=blurb, img=img))
 
     from datetime import datetime, timezone
     cyc = latest.get("cycle", "")
@@ -93,13 +100,9 @@ def main():
                       autoescape=select_autoescape(["html"]))
     tpl = env.get_template("index.html")
     import json as _json
-    rows = site_meta.model_rows(latest, cyc)
     html = tpl.render(tabs=tabs, cycle=cyc, when=when,
                       updated=latest.get("updated", ""),
                       level=latest.get("level", 10), lat=latest.get("lat", 60),
-                      models=rows,
-                      model_note=site_meta.cycle_note(cyc),
-                      models_by_cycle_json=_json.dumps(site_meta.models_by_cycle(latest)),
                       lat_list=lat_list, key_labels={k: site_meta.key_label(k) for k in lat_list},
                       default_key=site_meta.store_key(site_meta.DEFAULT_LAT,
                                                       site_meta.DEFAULT_LEVEL),
