@@ -216,6 +216,7 @@ LEGACY = {   # model -> (family, existing filename template in data/)
     "ifs": ("ecmwf", "ifs_ctl_{run}_u{lev}.npz"),
     "gfs": ("ncep", "gfs_ctl_{run}.npz"),
     "gefs": ("ncep", "gefs_mean_{run}.npz"),
+    "gefs_ctl": ("ncep", "gefs_ctl_{run}.npz"),
     "gefs_members": ("ncep", "gefs_members_{run}.npz"),
 }
 
@@ -252,7 +253,11 @@ def fetch_model(model, date, cyc, level, max_step=None):
         except OSError:
             pass
     run = f"{date}{cyc}"
-    fam, tmpl = LEGACY[model]
+    entry = LEGACY.get(model)
+    if entry is None:
+        log(f"  {model}: no fetcher known - skipped")
+        return None
+    fam, tmpl = entry
     famrun = f"{date}{cyc}00" if fam == "ecmwf" else f"{date}{cyc}"
     legacy = os.path.join(ROOT, "data", tmpl.format(run=famrun, lev=level))
     if legacy and os.path.exists(legacy):
@@ -281,7 +286,8 @@ def fetch_model(model, date, cyc, level, max_step=None):
     elif model in ("gefs", "gfs", "gefs_members"):
         prod = {"gefs": "gefs_mean", "gfs": "gfs_ctl", "gefs_members": "gefs_members"}[model]
         rc, so, se = sh([PY, os.path.join(HERE, "fetch_noaa.py"), "--product", prod,
-                         "--date", date, "--cyc", cyc, "--out", out])
+                         "--date", date, "--cyc", cyc, "--level", str(level),
+                         "--out", out])
     else:
         return None
     if rc != 0 or not os.path.exists(out):
@@ -296,7 +302,7 @@ def fetch_gefs_control(date, cyc, level):
     if os.path.exists(out):
         return out
     rc, so, se = sh([PY, os.path.join(HERE, "fetch_noaa.py"), "--product", "gefs_ctl",
-                     "--date", date, "--cyc", cyc, "--out", out])
+                     "--date", date, "--cyc", cyc, "--level", str(level), "--out", out])
     return out if rc == 0 else None
 
 
@@ -487,6 +493,8 @@ def render_all(cycle, level, lat=None, lats=None, levels=None):
         for tab, _ in TABS:
             if tab in ("ensembles", "ssw") and not has_members:
                 continue
+            if not tabS:
+                continue                      # nothing to draw at this level
             tabS = dict(S)
             if tab == "physics":
                 for k in ("aifs_mean", "aifs_ctl", "aifs_single"):
@@ -575,13 +583,16 @@ def _sync(level, lat, only, members, force):
     for lev, ms in LEVELS.items():
         if lev == level:
             continue
-        if gfs_date and "gfs" in ms:
-            fetch_model("gfs", gfs_date, gfs_cyc, lev)
-        if gefs_date:
-            if "gefs" in ms:
-                fetch_model("gefs", gefs_date, gefs_cyc, lev)
-            if "gefs_ctl" in ms:
-                fetch_gefs_control(gefs_date, gefs_cyc, lev)
+        try:
+            if gfs_date and "gfs" in ms:
+                fetch_model("gfs", gfs_date, gfs_cyc, lev)
+            if gefs_date:
+                if "gefs" in ms:
+                    fetch_model("gefs", gefs_date, gefs_cyc, lev)
+                if "gefs_ctl" in ms:
+                    fetch_gefs_control(gefs_date, gefs_cyc, lev)
+        except Exception as e:
+            log(f"  NOAA @{lev}h: FETCH ERROR {e!r} - continuing")
 
     # The figure cycle = the NEWEST cycle that is complete. Never the cycle with
     # the most models: the 06z/18z suites have no ECMWF IFS/EPS, so an older

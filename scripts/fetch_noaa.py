@@ -132,6 +132,7 @@ def main():
     ap.add_argument("--date", default="20261026")
     ap.add_argument("--cyc", default="12")
     ap.add_argument("--maxstep", type=int, default=384)
+    ap.add_argument("--level", type=int, default=10, help="pressure level in hPa")
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     bucket, pat = PRODUCTS[a.product]
@@ -141,8 +142,8 @@ def main():
 
     def work(step):
         key = pat.format(d=a.date, c=cyc, step=step)
-        cache = f"{IDX}/{a.product}_{a.date}{cyc}_{step}.idx"
-        entry = index_entry(bucket, key, cache)
+        cache = f"{IDX}/{a.product}_{a.date}{cyc}_l{a.level}_{step}.idx"
+        entry = index_entry(bucket, key, cache, level=a.level)
         if entry is None:
             return None                  # step not disseminated yet
         off, ln = entry
@@ -158,8 +159,8 @@ def main():
         def work_member(job):
             st, m = job
             key = pat.format(d=a.date, c=cyc, step=st, MM=m)
-            cache = f"{IDX}/gefs_m{m:02d}_{a.date}{cyc}_{st}.idx"
-            entry = index_entry(bucket, key, cache)
+            cache = f"{IDX}/gefs_m{m:02d}_{a.date}{cyc}_l{a.level}_{st}.idx"
+            entry = index_entry(bucket, key, cache, level=a.level)
             if entry is None:
                 return None
             off, ln = entry
