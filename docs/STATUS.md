@@ -92,9 +92,11 @@ members x several stretches each = a tangle of broken-looking blue/green lines
 below the zero line that read as glitches.
 
 Fix (commit `a9c5788`):
-- the members that meet the >= 24 h criterion are now shown as **one shaded
-  envelope** (how deep the reversal goes) with a legend entry, instead of one
-  line per member;
+- the members that meet the >= 24 h criterion are now shown as **one dashed
+  line per system** - the deepest member that meets the criterion, i.e. how
+  deep the reversal gets - instead of one line per member (which was a tangle)
+  and instead of a filled envelope (which overlapped the other system and the
+  member lines and read as mud past 6 Nov);
 - the envelope starts at the real onset of the easterly run, not at the fourth
   step of it (the segment used to start where the criterion became true, which
   is 18 h after the reversal actually began);
