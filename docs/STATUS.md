@@ -83,6 +83,24 @@ Fixes (commit `0a62ca5`):
 - the EPS members (~3000 large GRIB files) are only fetched for the newest
   candidate cycle - that fetch was what made the sync take 30+ minutes.
 
+## 2026-10-28 01:55Z - the SSW watch was drawing spaghetti
+
+The user flagged the SSW panel ("should not have these errors"). The data was
+fine - no spikes, the member counts matched the lower panel - but the *drawing*
+was wrong: one heavy line per member for every easterly stretch. 13 reversed
+members x several stretches each = a tangle of broken-looking blue/green lines
+below the zero line that read as glitches.
+
+Fix (commit `a9c5788`):
+- the members that meet the >= 24 h criterion are now shown as **one shaded
+  envelope** (how deep the reversal goes) with a legend entry, instead of one
+  line per member;
+- the envelope starts at the real onset of the easterly run, not at the fourth
+  step of it (the segment used to start where the criterion became true, which
+  is 18 h after the reversal actually began);
+- `RENDER_VERSION` - a style change now forces a re-render, so a figure fix
+  reaches the site immediately instead of waiting for the next cycle.
+
 ## Next things worth doing
 
 - Archive browser for older cycles.
