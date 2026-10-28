@@ -23,9 +23,11 @@ import era5_cache as E  # noqa: E402
 
 DOMAINS = {"60N": dict(lat=60.0), "70N": dict(lat=70.0),
            "NH": dict(lat=None), "cap": dict(lat_range=(65.0, 90.0))}
-# the SSW season - the record minimum is quoted for the season, not for the
-# whole year (a summer value would not be a polar-vortex yardstick)
-SEASON = ("10-01", "12-31")
+# the SSW season - the record statistics are quoted for the winter half-year
+# (Nov -> May), not for the whole year: a summer value would not be a
+# polar-vortex yardstick, and the deepest reversals of a season often come in
+# January/February, which an Oct-Dec window would miss
+SEASON = ("11-01", "05-31")
 
 
 def main():

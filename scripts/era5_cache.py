@@ -243,11 +243,8 @@ def climatology(level_hPa, lat=None, start="01-01", end="12-31",
         if not len(hit):
             raise RuntimeError(f"level {level_hPa} hPa is not in the slim cache {CACHE}")
         lev = int(hit[0])
-    s_m, s_d = (int(x) for x in start.split("-"))
-    e_m, e_d = (int(x) for x in end.split("-"))
     sel = m[(m["year"].isin(list(years)))]
-    sel = sel[((sel["month"] > s_m) | ((sel["month"] == s_m) & (sel["day"] >= s_d))) &
-              ((sel["month"] < e_m) | ((sel["month"] == e_m) & (sel["day"] <= e_d)))]
+    sel = sel[_season_mask(sel["month"], sel["day"], start, end)]
     if not len(sel):
         raise RuntimeError(f"no cached data for {start}-{end}")
     # profiles.npy rows are in manifest order; step_id is the ARCO chunk index
@@ -274,8 +271,20 @@ def climatology(level_hPa, lat=None, start="01-01", end="12-31",
 _DAILY_CACHE = {}
 
 
+def _season_mask(month, day, start, end):
+    """Rows inside the (month-day) window, which may wrap the year end.
+
+    The SSW season runs Nov -> May, so "after the start" OR "before the end"
+    is the right test there (a plain AND would select nothing).
+    """
+    s_m, s_d = (int(x) for x in start.split("-"))
+    e_m, e_d = (int(x) for x in end.split("-"))
+    after = (month > s_m) | ((month == s_m) & (day >= s_d))
+    before = (month < e_m) | ((month == e_m) & (day <= e_d))
+    return (after & before) if s_m <= e_m else (after | before)
+
 def daily_series(level_hPa, lat=None, lat_range=None, years=range(1991, 2021),
-                 start="10-01", end="12-31", var="u"):
+                 start="11-01", end="05-31", var="u"):
     """Every DAILY value in the cache for the window -> (dates, values).
 
     The climatology() query averages the years away; this keeps them, which is
@@ -292,11 +301,8 @@ def daily_series(level_hPa, lat=None, lat_range=None, years=range(1991, 2021),
         if not len(hit):
             raise RuntimeError(f"level {level_hPa} hPa is not in the slim cache {CACHE}")
         lev = int(hit[0])
-    s_m, s_d = (int(x) for x in start.split("-"))
-    e_m, e_d = (int(x) for x in end.split("-"))
     sel = m[m["year"].isin(list(years))]
-    sel = sel[((sel["month"] > s_m) | ((sel["month"] == s_m) & (sel["day"] >= s_d))) &
-              ((sel["month"] < e_m) | ((sel["month"] == e_m) & (sel["day"] <= e_d)))]
+    sel = sel[_season_mask(sel["month"], sel["day"], start, end)]
     if not len(sel):
         raise RuntimeError(f"no cached data for {start}-{end}")
     # the block read is the expensive part - cache it (the domains share it)
@@ -327,7 +333,7 @@ def daily_series(level_hPa, lat=None, lat_range=None, years=range(1991, 2021),
 
 
 def record_min(level_hPa, lat=None, lat_range=None, years=range(1991, 2021),
-               start="10-01", end="12-31", var="u"):
+               start="11-01", end="05-31", var="u"):
     """The lowest daily value in the record -> (value, "YYYY-MM-DD").
 
     At 60N/10 hPa the daily climatology is westerly all season, so this is the
@@ -339,7 +345,7 @@ def record_min(level_hPa, lat=None, lat_range=None, years=range(1991, 2021),
 
 
 def easterly_frequency(level_hPa, lat=None, lat_range=None,
-                       years=range(1991, 2021), start="10-01", end="12-31",
+                       years=range(1991, 2021), start="11-01", end="05-31",
                        var="u"):
     """% of the days in the record with an easterly (< 0 m/s) wind, per
     calendar day.  {month-day: percent}"""

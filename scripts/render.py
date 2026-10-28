@@ -329,17 +329,9 @@ def render_ssw(S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
              f"{cycle_label(cycle)}   •   ERA5 1991–2020 climatology   •   "
              f"criterion: u < 0 m/s for {SSW_MIN_HOURS} h or more",
              ha="left", va="top", fontsize=10.5, color="#333333")
-    # context: the lowest daily value in the ERA5 record for this domain
-    try:
-        rv, rd = EC.record_min(level, years=range(1991, 2021),
-                               start="10-01", end="12-31", **clim_kwargs(lat))
-        ax.text(0.995, 0.975,
-                f"ERA5 record min (1991-2020): {rv:.1f} m/s on {rd}",
-                transform=ax.transAxes, ha="right", va="top", fontsize=10.5,
-                fontweight="bold", color="#111111",
-                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#999999", lw=0.8))
-    except Exception as e:                        # no cache here: skip the box
-        print(f"  (record min unavailable: {e})")
+    # (the ERA5 record-min/max box was removed - the climatology band already
+    #  gives the context, and a record number on the chart read as a target
+    #  rather than as a yardstick)
     fig.text(0.5, 0.012, "Valid Days", ha="center", va="bottom", fontsize=12.5, color="#111111")
     fig.text(0.988, 0.010, "@Massachusettswx", ha="right", va="bottom",
              fontsize=12.5, fontweight="bold", color="#111111")
