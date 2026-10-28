@@ -70,7 +70,7 @@ def main():
 
     # 1. figures on disk ---------------------------------------------------
     per_lat = (latest.get("cycles") or {}).get(cycle) or {}
-    default_lat = latest.get("default_lat", "60")
+    default_lat = "60|10"                   # domain|level
     if per_lat and default_lat not in per_lat and "physics" in per_lat:
         per_lat = {default_lat: per_lat}      # older store layout: flat
     figs = per_lat.get(default_lat) or {}
@@ -85,13 +85,13 @@ def main():
           f"figure MISSING: ssw ({f}) - the SSW product is optional",
           critical=False)
     # the other domains the site offers
-    for lat in sorted(per_lat):
-        if lat == default_lat:
+    for key in sorted(per_lat):
+        if key == default_lat:
             continue
-        f = (per_lat[lat] or {}).get("ai")
+        f = (per_lat[key] or {}).get("ai")
         check(bool(f) and os.path.exists(os.path.join(FIGDIR, f)),
-              f"domain {lat}: figure present",
-              f"domain {lat}: figure MISSING ({f})",
+              f"view {key}: figure present",
+              f"view {key}: figure MISSING ({f})",
               critical=False)
 
     # 2. the label says the cycle hour ------------------------------------

@@ -64,6 +64,17 @@ TABS = [("physics", "Physics-based"), ("ai", "AI"),
 LATS = tuple(site_meta.LAT_ORDER)
 LAT_LABELS = site_meta.LAT_LABELS
 
+# The levels the site offers, and which models have data at each of them.
+# 10 hPa is the SSW level and has everything; the stratospheric levels have
+# the cheap series only (the AIFS ENS / EPS members are a 6 GB fetch per
+# level per cycle - not worth it for a chart).
+ALL_MODELS_FOR_LEVEL = ("aifs-ens", "aifs-single", "ifs", "eps", "gfs",
+                         "gefs", "gefs_ctl", "gefs_members")
+CHEAP_MODELS_FOR_LEVEL = ("aifs-single", "ifs", "gfs", "gefs", "gefs_ctl")
+LEVELS = {10: ALL_MODELS_FOR_LEVEL, 3: CHEAP_MODELS_FOR_LEVEL,
+          1: CHEAP_MODELS_FOR_LEVEL}
+DEFAULT_LEVEL = 10
+
 # models that must be present for a complete cycle, and the slow extras
 CORE = ("aifs-ens", "aifs-single", "ifs", "eps", "gfs", "gefs", "gefs_ctl")
 EXTRA = ("gefs_members",)
@@ -455,21 +466,27 @@ def pick_cycle(candidates, have_models, now=None):
     return newest, False
 
 
-def render_all(cycle, level, lat=None, lats=None):
-    """Render every tab for every domain (latitude) of this cycle."""
+def render_all(cycle, level, lat=None, lats=None, levels=None):
+    """Render every tab for every (level, domain) of this cycle."""
     import render
     lats = tuple(lats or LATS)
+    levels = tuple(levels or sorted(LEVELS))
     outs = []
-    for lat_i in lats:
-        S = _series_for_tab("ensembles", cycle, level, lat_i)   # superset: members
+    for lev in levels:
+      for lat_i in lats:
+        S = _series_for_tab("ensembles", cycle, lev, lat_i)   # superset: members
         if not S:
             continue
         t0 = pd.Timestamp(f"{cycle[:4]}-{cycle[4:6]}-{cycle[6:8]} {cycle[8:10]}:00")
         t0 = t0.tz_localize(None)
-        clim_pick, clim_sd = render.load_clim(level, lat_i, t0,
+        clim_pick, clim_sd = render.load_clim(lev, lat_i, t0,
                                               t0 + pd.Timedelta(hours=360))
         analysis = float(S["aifs_ctl"][1][0]) if "aifs_ctl" in S else float("nan")
+        has_members = any(k in S for k in ("aifs_ens_members", "gefs_members",
+                                           "eps_members"))
         for tab, _ in TABS:
+            if tab in ("ensembles", "ssw") and not has_members:
+                continue
             tabS = dict(S)
             if tab == "physics":
                 for k in ("aifs_mean", "aifs_ctl", "aifs_single"):
@@ -481,14 +498,14 @@ def render_all(cycle, level, lat=None, lats=None):
                 tabS = {k: v for k, v in S.items() if k in
                         ("aifs_mean", "aifs_ctl", "eps_mean", "gefs_mean",
                          "aifs_ens_members", "eps_members", "gefs_members")}
-            out = os.path.join(FIGDIR, f"{tab}_{cycle}_u{level}_{lat_i}.png")
-            render.render_tab(tab, tabS, clim_pick, clim_sd, out, level, lat_i,
+            out = os.path.join(FIGDIR, f"{tab}_{cycle}_u{lev}_{lat_i}.png")
+            render.render_tab(tab, tabS, clim_pick, clim_sd, out, lev, lat_i,
                               cycle, analysis)
             outs.append(out)
             log(f"  rendered {os.path.basename(out)}")
         # SSW watch: the reversal probability product (uses the member series)
-        ssw_out = os.path.join(FIGDIR, f"ssw_{cycle}_u{level}_{lat_i}.png")
-        if render.render_ssw(S, clim_pick, clim_sd, ssw_out, level, lat_i, cycle,
+        ssw_out = os.path.join(FIGDIR, f"ssw_{cycle}_u{lev}_{lat_i}.png")
+        if render.render_ssw(S, clim_pick, clim_sd, ssw_out, lev, lat_i, cycle,
                              analysis):
             outs.append(ssw_out)
             log(f"  rendered {os.path.basename(ssw_out)}")
@@ -536,6 +553,16 @@ def _sync(level, lat, only, members, force):
             if only and m not in only:
                 continue
             fetch_model(m, ec_date, ec_cyc, level, max_step=ec_horizon)
+        # the extra stratospheric levels: the cheap series only
+        for lev, ms in LEVELS.items():
+            if lev == level:
+                continue
+            for m in ms:
+                if m in ("ifs", "eps") and m not in ec_models:
+                    continue
+                if only and m not in only:
+                    continue
+                fetch_model(m, ec_date, ec_cyc, lev, max_step=ec_horizon)
     # NCEP models
     if gfs_date:
         fetch_model("gfs", gfs_date, gfs_cyc, level)
@@ -544,6 +571,17 @@ def _sync(level, lat, only, members, force):
         if members:
             fetch_model("gefs_members", gefs_date, gefs_cyc, level)
         fetch_gefs_control(gefs_date, gefs_cyc, level)
+    # the extra stratospheric levels (the cheap series only)
+    for lev, ms in LEVELS.items():
+        if lev == level:
+            continue
+        if gfs_date and "gfs" in ms:
+            fetch_model("gfs", gfs_date, gfs_cyc, lev)
+        if gefs_date:
+            if "gefs" in ms:
+                fetch_model("gefs", gefs_date, gefs_cyc, lev)
+            if "gefs_ctl" in ms:
+                fetch_gefs_control(gefs_date, gefs_cyc, lev)
 
     # The figure cycle = the NEWEST cycle that is complete. Never the cycle with
     # the most models: the 06z/18z suites have no ECMWF IFS/EPS, so an older
@@ -595,7 +633,7 @@ def _sync(level, lat, only, members, force):
 
     # history: the main domain keeps KEEP cycles, the extra domains fewer
     # (the store is committed to the repo and uploaded to Pages)
-    KEEP, KEEP_OTHER = 14, 3
+    KEEP, KEEP_OTHER = 14, 2
     all_cycles = sorted({f.split("_")[1] for f in os.listdir(FIGDIR)})
     keep_main = set(all_cycles[-KEEP:])
     keep_other = set(all_cycles[-KEEP_OTHER:])
@@ -603,17 +641,20 @@ def _sync(level, lat, only, members, force):
         parts = f.split("_")
         cyc = parts[1]
         lat = parts[3].split(".")[0] if len(parts) > 3 else "60"
-        keep = keep_main if lat == str(int(60)) else keep_other
+        lev = parts[2].replace("u", "") if len(parts) > 2 else str(DEFAULT_LEVEL)
+        keep = keep_main if (lat == "60" and lev == str(DEFAULT_LEVEL)) else keep_other
         if cyc not in keep:
             os.remove(os.path.join(FIGDIR, f))
-    # store layout: {cycle: {lat: {tab: figure}}}
+    # store layout: {cycle: {"domain|level": {tab: figure}}}
     cycles = {}
     for f in sorted(os.listdir(FIGDIR)):
         parts = f.split("_")
         if len(parts) < 4:
             continue
-        tab, cyc, lat = parts[0], parts[1], parts[3].split(".")[0]
-        cycles.setdefault(cyc, {}).setdefault(lat, {})[tab] = f
+        tab, cyc = parts[0], parts[1]
+        lat = parts[3].split(".")[0]
+        lev = parts[2].replace("u", "")
+        cycles.setdefault(cyc, {}).setdefault(f"{lat}|{lev}", {})[tab] = f
     # which models are actually on each cycle's charts (06z/18z: no ECMWF IFS/EPS)
     def cycle_model_list(cyc):
         have = {m for m in models_for_cycle(cyc)

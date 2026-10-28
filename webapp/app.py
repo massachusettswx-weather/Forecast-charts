@@ -57,7 +57,7 @@ def index(request: Request):
     cycles = d.get("cycles", {}) or {}
     cyc_list = sorted(cycles.keys(), reverse=True)
     lat_list = sorted({l for c in cycles.values() for l in c},
-                       key=site_meta.lat_sort_key)
+                       key=site_meta.key_sort_key)
     figs = []
     for key, title, blurb in TABS:
         cand = []
@@ -100,8 +100,10 @@ def index(request: Request):
         "lat": d.get("lat", 60), "models": site_meta.model_rows(d, cyc),
         "model_note": site_meta.cycle_note(cyc),
         "models_by_cycle_json": json.dumps(site_meta.models_by_cycle(d)),
-        "lat_list": lat_list, "lat_labels": site_meta.LAT_LABELS,
-        "default_lat": site_meta.DEFAULT_LAT,
+        "lat_list": lat_list,
+        "key_labels": {k: site_meta.key_label(k) for k in lat_list},
+        "default_key": site_meta.store_key(site_meta.DEFAULT_LAT,
+                                            site_meta.DEFAULT_LEVEL),
         "cycle_list": cyc_list, "cycle_labels": labels,
         "cycles_json": json.dumps(cycles),
         "age_hours": age_h, "valid_from": valid_from, "valid_to": valid_to,

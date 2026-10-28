@@ -75,9 +75,9 @@
         <option value="{{ c }}" {{ 'selected' if c == cycle else '' }}>{{ cycle_labels.get(c, c) }}</option>
       {% endfor %}
     </select>
-    <select class="cycle" id="latpick" title="domain">
+    <select class="cycle" id="latpick" title="domain and level">
       {% for l in lat_list %}
-        <option value="{{ l }}" {{ 'selected' if l == default_lat else '' }}>{{ lat_labels.get(l, l) }}</option>
+        <option value="{{ l }}" {{ 'selected' if l == default_key else '' }}>{{ key_labels.get(l, l) }}</option>
       {% endfor %}
     </select>
   </nav>

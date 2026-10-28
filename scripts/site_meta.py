@@ -33,9 +33,39 @@ DEFAULT_LAT = "60"
 LAT_ORDER = ["60", "70", "0", "cap"]
 LAT_LABELS = {k: v["label"] for k, v in DOMAINS.items()}
 
+# the levels the site offers
+LEVELS = [(10, "10 hPa"), (3, "3 hPa"), (1, "1 hPa")]
+DEFAULT_LEVEL = 10
+
+
+def store_key(domain, level):
+    """The store key for a (domain, level) pair: '60|10'."""
+    return f"{domain}|{level}"
+
+
+def key_label(key):
+    """'60˚N · 10 hPa' for a store key."""
+    try:
+        dom, lev = key.split("|")
+        lname = dict(LEVELS).get(int(lev), f"{lev} hPa")
+        return f"{DOMAINS.get(dom, {}).get('label', dom)} · {lname}"
+    except Exception:
+        return key
+
 
 def lat_sort_key(lat):
     return (LAT_ORDER.index(lat) if lat in LAT_ORDER else 99, lat)
+
+
+def key_sort_key(key):
+    """The default domain+level first, then the rest."""
+    try:
+        dom, lev = key.split("|")
+        return (0 if (dom == DEFAULT_LAT and int(lev) == DEFAULT_LEVEL) else 1,
+                LAT_ORDER.index(dom) if dom in LAT_ORDER else 99,
+                -int(lev))
+    except Exception:
+        return (99, 99, 0)
 
 NO_OPS_NOTE = ("ECMWF IFS control and ECMWF EPS are not shown in the 06z/18z cycles "
                "— ECMWF publishes those two runs only out to 144 h, so a 15-day "
