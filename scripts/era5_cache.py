@@ -112,7 +112,18 @@ def _append(rows, profiles, var="u"):
     if os.path.exists(pf):
         arr = np.lib.format.open_memmap(pf, mode="r+")
         if arr.shape[0] < start + n:
-            arr.resize(max(start + n, CAPACITY), axis=0)
+            # the store was written before the memmap change: grow it once
+            old = np.asarray(arr[:start], dtype="<f4")
+            del arr
+            arr = np.lib.format.open_memmap(pf + ".tmp.npy", mode="w+",
+                                            dtype="<f4",
+                                            shape=(max(CAPACITY, start + n),
+                                                   NLEV, NLAT))
+            arr[:start] = old
+            arr.flush()
+            del arr
+            os.replace(pf + ".tmp.npy", pf)
+            arr = np.lib.format.open_memmap(pf, mode="r+")
     else:
         arr = np.lib.format.open_memmap(pf, mode="w+", dtype="<f4",
                                         shape=(max(CAPACITY, start + n),
