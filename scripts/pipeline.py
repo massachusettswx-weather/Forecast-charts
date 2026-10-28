@@ -33,6 +33,7 @@ if HERE not in sys.path:
 import site_meta
 STORE = os.path.join(ROOT, "data", "store")
 FIGDIR = os.path.join(STORE, "figures")
+_render_errors = []
 SELDIR = os.path.join(STORE, "series")
 PY = (os.environ.get("PIPELINE_PYTHON")
       or (os.path.join(ROOT, "venv", "bin", "python")
@@ -497,8 +498,6 @@ def render_all(cycle, level, lat=None, lats=None, levels=None):
         for tab, _ in TABS:
             if tab in ("ensembles", "ssw") and not has_members:
                 continue
-            if not tabS:
-                continue                      # nothing to draw at this level
             tabS = dict(S)
             if tab == "physics":
                 for k in ("aifs_mean", "aifs_ctl", "aifs_single"):
@@ -510,19 +509,51 @@ def render_all(cycle, level, lat=None, lats=None, levels=None):
                 tabS = {k: v for k, v in S.items() if k in
                         ("aifs_mean", "aifs_ctl", "eps_mean", "gefs_mean",
                          "aifs_ens_members", "eps_members", "gefs_members")}
+            if not tabS:
+                continue                      # nothing to draw for this tab
             out = os.path.join(FIGDIR, f"{tab}_{cycle}_u{lev}_{lat_i}.png")
-            render.render_tab(tab, tabS, clim_pick, clim_sd, out, lev, lat_i,
-                              cycle, analysis)
+            try:
+                render.render_tab(tab, tabS, clim_pick, clim_sd, out, lev,
+                                  lat_i, cycle, analysis)
+            except Exception as exc:
+                import traceback
+                tb = traceback.format_exc()
+                log(f"  RENDER FAILED {os.path.basename(out)}: {exc}")
+                _render_errors.append(f"{os.path.basename(out)}\n{tb}")
+                continue
             outs.append(out)
             log(f"  rendered {os.path.basename(out)}")
         # SSW watch: the reversal probability product (uses the member series)
         ssw_out = os.path.join(FIGDIR, f"ssw_{cycle}_u{lev}_{lat_i}.png")
-        if render.render_ssw(S, clim_pick, clim_sd, ssw_out, lev, lat_i, cycle,
-                             analysis):
+        try:
+            got = render.render_ssw(S, clim_pick, clim_sd, ssw_out, lev, lat_i,
+                                    cycle, analysis)
+        except Exception as exc:
+            import traceback
+            tb = traceback.format_exc()
+            log(f"  RENDER FAILED {os.path.basename(ssw_out)}: {exc}")
+            _render_errors.append(f"{os.path.basename(ssw_out)}\n{tb}")
+            got = False
+        if got:
             outs.append(ssw_out)
             log(f"  rendered {os.path.basename(ssw_out)}")
     return outs
 
+
+
+
+def _write_render_errors():
+    """Keep the render tracebacks in the store so a failed render is visible
+    without the Actions log (the store is committed to the repo)."""
+    p = os.path.join(STORE, "render_errors.log")
+    try:
+        if _render_errors:
+            with open(p, "w") as fh:
+                fh.write("\n\n".join(_render_errors) + "\n")
+        elif os.path.exists(p):
+            os.remove(p)
+    except OSError:
+        pass
 
 # ------------------------------------------------------------------------ main
 def sync(level=10, lat=60.0, only=None, members=True, force=False):
@@ -670,11 +701,18 @@ def _sync(level, lat, only, members, force):
     # that was published - otherwise the label and the chart disagree.
     if not outs:
         prev_pub = st.get("rendered_cycle")
-        if prev_pub and any(f"_{prev_pub}_" in f for f in os.listdir(FIGDIR)):
-            log(f"  cycle {cycle} has no figures yet - the site keeps {prev_pub}")
+        if prev_pub and prev_pub != cycle:
+            log(f"  cycle {cycle} has no figures yet - re-rendering the last "
+                f"published cycle {prev_pub}")
+            outs = render_all(prev_pub, level, lat)
             cycle = prev_pub
-            outs = [os.path.join(FIGDIR, f) for f in os.listdir(FIGDIR)
-                    if f"_{cycle}_" in f and f.endswith(".png")]
+        if not outs:
+            # nothing at all could be drawn: keep the published latest.json
+            # (it still points at real figures) instead of publishing an
+            # empty one - the site would then show a label with no chart.
+            log("  no figures for any cycle - keeping the published latest.json")
+            _write_render_errors()
+            return
 
     # history: the main domain keeps KEEP cycles, the extra domains fewer
     # (the store is committed to the repo and uploaded to Pages)
@@ -722,6 +760,7 @@ def _sync(level, lat, only, members, force):
                               "family": MODELS[m][2], "kind": MODELS[m][3]}
                           for m in MODELS}}
     json.dump(latest, open(os.path.join(STORE, "latest.json"), "w"), indent=2)
+    _write_render_errors()
     status["last_sync"] = datetime.now(timezone.utc).isoformat()
     status["cycles"] = {"ecmwf": cyc_ec, "gfs": cyc_gfs, "gefs": cyc_gefs}
     status["rendered"] = cycle
