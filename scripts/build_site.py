@@ -41,13 +41,6 @@ def main():
         latest = json.load(open(f))
     figs = latest.get("figures", {})
 
-    # copy every figure we keep (all cycles)
-    names = []
-    for name in os.listdir(FIGDIR):
-        if name.endswith(".png"):
-            shutil.copy(os.path.join(FIGDIR, name), os.path.join(out, "fig", name))
-            names.append(name)
-
     cycles = latest.get("cycles", {})
     if not cycles:                      # fall back to the current cycle
         cycles = {latest.get("cycle", ""): {"60": {k: v for k, v in figs.items()}}}
@@ -71,6 +64,23 @@ def main():
                 img = "fig/" + f
                 break
         tabs.append(dict(key=key, title=title, blurb=blurb, img=img))
+
+    # Copy only the figures the site actually serves: the default view of
+    # every cycle in the picker. The other views (70N, 1 hPa, NH, polar cap)
+    # are rendered and kept in the store, but they are not published - that
+    # halves the Pages upload.
+    default_view = site_meta.store_key(site_meta.DEFAULT_LAT,
+                                       site_meta.DEFAULT_LEVEL)
+    need = set()
+    for c in cyc_list:
+        for f in (cycles.get(c, {}).get(default_view) or {}).values():
+            need.add(f)
+    names = []
+    for name in sorted(need):
+        src = os.path.join(FIGDIR, name)
+        if os.path.exists(src):
+            shutil.copy(src, os.path.join(out, "fig", name))
+            names.append(name)
 
     from datetime import datetime, timezone
     cyc = latest.get("cycle", "")

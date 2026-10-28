@@ -110,22 +110,41 @@ def main():
 
     # 3. the climatology is the right level --------------------------------
     try:
-        import era5_cache as EC
+        import clim_artifact
+        import numpy as _np
         d0 = R.step_times([0], cycle)[0]
         d1 = d0 + __import__("datetime").timedelta(hours=360)
-        m10, _, _ = EC.climatology(10, lat=60, start=f"{d0.month:02d}-{d0.day:02d}",
-                                   end=f"{d1.month:02d}-{d1.day:02d}")
-        m100, _, _ = EC.climatology(100, lat=60, start=f"{d0.month:02d}-{d0.day:02d}",
-                                    end=f"{d1.month:02d}-{d1.day:02d}")
-        v10 = float(m10.mean()) if len(m10) else float("nan")
-        v100 = float(m100.mean()) if len(m100) else float("nan")
+        days = [(d0 + __import__("datetime").timedelta(days=k)) for k in
+                range((d1 - d0).days + 1)]
+        vals = {}
+        for lev in (10, 100):
+            mean, _, _ = clim_artifact.climatology(lev, "60")
+            xs = [mean.get(f"{d.month:02d}-{d.day:02d}", _np.nan) for d in days]
+            vals[lev] = _np.nanmean(xs) if len(xs) else _np.nan
+        v10, v100 = float(vals[10]), float(vals[100])
         check(15 < v10 < 35, f"ERA5 clim at 10 hPa = {v10:.1f} m/s",
               f"ERA5 clim at 10 hPa = {v10:.1f} m/s - looks like the WRONG level")
         check(abs(v10 - v100) > 3,
               f"10 hPa and 100 hPa climatologies differ ({v10:.1f} vs {v100:.1f})",
               "10 hPa and 100 hPa climatologies are the same - level mapping is broken")
-    except Exception as e:                       # no cache here: warn, don't fail
-        print(f"  warn  ERA5 level check skipped ({e})")
+    except Exception as e:
+        try:                                    # fall back to the raw cache
+            import era5_cache as EC
+            d0 = R.step_times([0], cycle)[0]
+            d1 = d0 + __import__("datetime").timedelta(hours=360)
+            m10, _, _ = EC.climatology(10, lat=60, start=f"{d0.month:02d}-{d0.day:02d}",
+                                       end=f"{d1.month:02d}-{d1.day:02d}")
+            m100, _, _ = EC.climatology(100, lat=60, start=f"{d0.month:02d}-{d0.day:02d}",
+                                        end=f"{d1.month:02d}-{d1.day:02d}")
+            v10 = float(m10.mean()) if len(m10) else float("nan")
+            v100 = float(m100.mean()) if len(m100) else float("nan")
+            check(15 < v10 < 35, f"ERA5 clim at 10 hPa = {v10:.1f} m/s",
+                  f"ERA5 clim at 10 hPa = {v10:.1f} m/s - looks like the WRONG level")
+            check(abs(v10 - v100) > 3,
+                  f"10 hPa and 100 hPa climatologies differ ({v10:.1f} vs {v100:.1f})",
+                  "10 hPa and 100 hPa climatologies are the same - level mapping is broken")
+        except Exception as e2:
+            print(f"  warn  ERA5 level check skipped ({e}; {e2})")
 
     # 4. the 06z/18z rule ---------------------------------------------------
     hour = int(cycle[8:10])

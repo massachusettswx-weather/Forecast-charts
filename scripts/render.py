@@ -76,10 +76,20 @@ def clim_kwargs(domain):
 
 
 def load_clim(level, domain, t0, t1):
-    kw = clim_kwargs(domain)
-    mean, std, _ = EC.climatology(level,
-                                  start=f"{t0.month:02d}-{t0.day:02d}",
-                                  end=f"{t1.month:02d}-{t1.day:02d}", **kw)
+    """The ERA5 climatology (mean, sigma) for this level and domain.
+
+    The small published artifact is used when it is there - the hosts only
+    carry that, not the ~850 MB of raw ERA5 profiles. On the build machine
+    (which has the raw cache) it falls back to the cache.
+    """
+    try:
+        import clim_artifact
+        mean, std, _ = clim_artifact.climatology(level, domain)
+    except Exception:
+        kw = clim_kwargs(domain)
+        mean, std, _ = EC.climatology(level,
+                                      start=f"{t0.month:02d}-{t0.day:02d}",
+                                      end=f"{t1.month:02d}-{t1.day:02d}", **kw)
     def pick(times):
         out = []
         for t in times:
