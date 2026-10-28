@@ -428,7 +428,7 @@ DATA_VERSION = 3
 # bump when the FIGURE STYLE changes - the charts are re-rendered even if the
 # data did not change (otherwise a style fix would only reach the site when
 # the next cycle arrives)
-RENDER_VERSION = 2
+RENDER_VERSION = 3
 
 
 def series_signature(cycle, level):
