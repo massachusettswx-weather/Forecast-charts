@@ -555,48 +555,49 @@ def _sync(level, lat, only, members, force):
     cyc_gfs = f"{gfs_date}{gfs_cyc}" if gfs_date else None
     cyc_gefs = f"{gefs_date}{gefs_cyc}" if gefs_date else None
 
-    # ECMWF models (AIFS ENS/Single, IFS control, EPS) share the ECMWF cycle
-    if ec_date:
-        ec_models = models_for_cycle(f"{ec_date}{ec_cyc}")
-        for m in ("aifs-ens", "aifs-single", "ifs", "eps"):
-            if m not in ec_models:
-                log(f"  {m}: not part of the {ec_cyc}z suite - skipped")
+    # Fetch every model of a candidate cycle FROM THAT CYCLE's archive. ECMWF
+    # and NCEP do not always have the same newest cycle, and the models of one
+    # cycle have to share its key - otherwise no cycle is ever complete and the
+    # site waits for a model that was filed under another cycle.
+    ECMWF_MODELS = ("aifs-ens", "aifs-single", "ifs", "eps")
+    NCEP_MODELS = ("gfs", "gefs", "gefs_ctl", "gefs_members")
+    candidate_cycles = []
+    for c in (cyc_ec, cyc_gfs, cyc_gefs):
+        if c and c not in candidate_cycles:
+            candidate_cycles.append(c)
+    for c in candidate_cycles:
+        date, cyc = c[:8], c[8:]
+        allowed = models_for_cycle(c)
+        for m in allowed:
+            if m in EXTRA and not members:
                 continue
             if only and m not in only:
                 continue
-            fetch_model(m, ec_date, ec_cyc, level, max_step=ec_horizon)
-        # the extra stratospheric levels: the cheap series only
+            try:
+                if m in ECMWF_MODELS:
+                    fetch_model(m, date, cyc, level, max_step=ec_horizon)
+                elif m == "gefs_ctl":
+                    fetch_gefs_control(date, cyc, level)
+                elif m in NCEP_MODELS:
+                    fetch_model(m, date, cyc, level)
+            except Exception as e:
+                log(f"  {m} @{c}: FETCH ERROR {e!r} - continuing")
+        # the extra stratospheric levels (the models that publish them)
         for lev, ms in LEVELS.items():
             if lev == level:
                 continue
             for m in ms:
-                if m in ("ifs", "eps") and m not in ec_models:
+                if m not in allowed or (only and m not in only):
                     continue
-                if only and m not in only:
-                    continue
-                fetch_model(m, ec_date, ec_cyc, lev, max_step=ec_horizon)
-    # NCEP models
-    if gfs_date:
-        fetch_model("gfs", gfs_date, gfs_cyc, level)
-    if gefs_date:
-        fetch_model("gefs", gefs_date, gefs_cyc, level)
-        if members:
-            fetch_model("gefs_members", gefs_date, gefs_cyc, level)
-        fetch_gefs_control(gefs_date, gefs_cyc, level)
-    # the extra stratospheric levels (the cheap series only)
-    for lev, ms in LEVELS.items():
-        if lev == level:
-            continue
-        try:
-            if gfs_date and "gfs" in ms:
-                fetch_model("gfs", gfs_date, gfs_cyc, lev)
-            if gefs_date:
-                if "gefs" in ms:
-                    fetch_model("gefs", gefs_date, gefs_cyc, lev)
-                if "gefs_ctl" in ms:
-                    fetch_gefs_control(gefs_date, gefs_cyc, lev)
-        except Exception as e:
-            log(f"  NOAA @{lev}h: FETCH ERROR {e!r} - continuing")
+                try:
+                    if m in ECMWF_MODELS:
+                        fetch_model(m, date, cyc, lev, max_step=ec_horizon)
+                    elif m == "gefs_ctl":
+                        fetch_gefs_control(date, cyc, lev)
+                    elif m in NCEP_MODELS:
+                        fetch_model(m, date, cyc, lev)
+                except Exception as e:
+                    log(f"  {m} @{lev}h @{c}: FETCH ERROR {e!r} - continuing")
 
     # The figure cycle = the NEWEST cycle that is complete. Never the cycle with
     # the most models: the 06z/18z suites have no ECMWF IFS/EPS, so an older
@@ -657,6 +658,17 @@ def _sync(level, lat, only, members, force):
         st["partial"] = not core_ok
         json.dump(st, open(stf, "w"), indent=2)
 
+    # The published cycle must HAVE figures: if this cycle could not be
+    # rendered yet (a model is still missing), the site keeps the last cycle
+    # that was published - otherwise the label and the chart disagree.
+    if not outs:
+        prev_pub = st.get("rendered_cycle")
+        if prev_pub and any(f"_{prev_pub}_" in f for f in os.listdir(FIGDIR)):
+            log(f"  cycle {cycle} has no figures yet - the site keeps {prev_pub}")
+            cycle = prev_pub
+            outs = [os.path.join(FIGDIR, f) for f in os.listdir(FIGDIR)
+                    if f"_{cycle}_" in f and f.endswith(".png")]
+
     # history: the main domain keeps KEEP cycles, the extra domains fewer
     # (the store is committed to the repo and uploaded to Pages)
     KEEP, KEEP_OTHER = 14, 2
@@ -693,7 +705,7 @@ def _sync(level, lat, only, members, force):
 
     cycle_models = {c: cycle_model_list(c) for c in cycles}
     import render as _render
-    latest = {"cycle": cycle, "level": level, "lat": lat,
+    latest = {"cycle": cycle, "level": level, "lat": site_meta.DEFAULT_LAT,
               "cycle_label": _render.cycle_label(cycle),
               "updated": datetime.now(timezone.utc).isoformat(),
               "figures": {os.path.basename(p): f"/fig/{os.path.basename(p)}" for p in outs},
