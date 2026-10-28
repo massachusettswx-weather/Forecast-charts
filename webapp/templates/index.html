@@ -140,11 +140,23 @@
   const latpick = document.getElementById('latpick');
   let curCycle = CURRENT_CYCLE;
   let curLat = latpick ? latpick.value : "{{ default_lat }}";
+  function figureFor(cycle, view, tab) {
+    const v = (CYCLES[cycle] || {})[view] || {};
+    if (v[tab]) return v[tab];
+    // the cycle may not have that view yet - fall back to the newest cycle
+    // that does, so the picker always shows something
+    const cycles = Object.keys(CYCLES).sort().reverse();
+    for (const c of cycles) {
+      const vv = (CYCLES[c] || {})[view] || {};
+      if (vv[tab]) return vv[tab];
+    }
+    return null;
+  }
   function applyFigures() {
-    const perLat = (CYCLES[curCycle] || {})[curLat] || {};
     panels.forEach(p => {
       const img = document.getElementById('img-' + p.dataset.key);
-      if (img && perLat[p.dataset.key]) img.src = 'fig/' + perLat[p.dataset.key];
+      const f = figureFor(curCycle, curLat, p.dataset.key);
+      if (img && f) img.src = 'fig/' + f;
     });
   }
   function renderModels(c) {
