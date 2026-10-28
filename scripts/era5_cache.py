@@ -95,22 +95,31 @@ def manifest(var="u"):
                                  "used_hour", "level_index"])
 
 
+# The store is a memory-mapped .npy with room for the whole record: appending
+# rewrote the whole file (245 MB and growing) on every flush, and on this
+# network volume that read+write dominated the build (minutes per flush).
+# With the memmap a flush only writes the new rows.
+CAPACITY = 8000          # rows: 64 years x 92 days = 5888
+
+
 def _append(rows, profiles, var="u"):
-    """Append (step rows, profile blocks) to the store, writing a valid .npy."""
+    """Append (step rows, profile blocks) to the store, in place."""
     os.makedirs(CACHE, exist_ok=True)
     m = manifest(var)
     start = len(m)
     n = len(profiles)
     pf = prof_path(var)
     if os.path.exists(pf):
-        old = np.load(pf, mmap_mode="r")
-        arr = np.zeros((start + n, NLEV, NLAT), dtype="<f4")
-        arr[:start] = old[:]
+        arr = np.lib.format.open_memmap(pf, mode="r+")
+        if arr.shape[0] < start + n:
+            arr.resize(max(start + n, CAPACITY), axis=0)
     else:
-        arr = np.zeros((start + n, NLEV, NLAT), dtype="<f4")
-    arr[start:] = np.asarray(profiles, dtype="<f4")
-    np.save(pf + ".tmp.npy", arr)
-    os.replace(pf + ".tmp.npy", pf)
+        arr = np.lib.format.open_memmap(pf, mode="w+", dtype="<f4",
+                                        shape=(max(CAPACITY, start + n),
+                                               NLEV, NLAT))
+    arr[start:start + n] = np.asarray(profiles, dtype="<f4")
+    arr.flush()
+    del arr
     m = pd.concat([m, pd.DataFrame(rows, columns=list(m.columns))], ignore_index=True)
     m.to_csv(man_path(var), index=False)
 
@@ -344,10 +353,13 @@ if __name__ == "__main__":
     ap.add_argument("--years", default=None, help="e.g. 1991-2020 (default 1991-2020)")
     ap.add_argument("--hour", type=int, default=12)
     ap.add_argument("--var", default="u", choices=sorted(VARS))
+    ap.add_argument("--workers", type=int, default=8,
+                    help="parallel chunk downloads (the build is network bound)")
     a = ap.parse_args()
     if a.cmd == "build":
         years = range(int(a.years.split("-")[0]), int(a.years.split("-")[1]) + 1) if a.years else range(1991, 2021)
-        build(a.start, a.end, years=years, hour=a.hour, var=a.var)
+        build(a.start, a.end, years=years, hour=a.hour, var=a.var,
+              workers=a.workers)
     elif a.cmd == "clim":
         mean, std, cnt = climatology(a.level, lat=a.lat, start=a.start, end=a.end)
         print(pd.DataFrame({"mean": mean, "std": std, "n": cnt}).to_string())
