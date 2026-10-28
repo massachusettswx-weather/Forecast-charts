@@ -180,6 +180,10 @@ def build(start="10-25", end="11-09", years=range(1991, 2021), hour=12, workers=
             if (y, cur.month, cur.day, hour) not in have:
                 jobs.append((y, cur))
             cur += pd.Timedelta(days=1)
+    # the store must carry its latitude axis: the queries (NH mean, polar
+    # cap) and the slim export both need it
+    if not os.path.exists(LATFILE):
+        np.savetxt(LATFILE, 90.0 - 0.25 * np.arange(NLAT), fmt="%.6f")
     print(f"cache[{var}]: {len(jobs)} steps to fetch ({len(m0)} already stored)",
           flush=True)
     if not jobs:
