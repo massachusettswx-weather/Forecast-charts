@@ -3,7 +3,7 @@
   "level": 10,
   "lat": "60",
   "cycle_label": "18z 28 Oct 2026",
-  "updated": "2026-10-29T03:02:10.944385+00:00",
+  "updated": "2026-10-29T04:35:12.138721+00:00",
   "figures": {
     "physics_2026102818_u1_60.png": "/fig/physics_2026102818_u1_60.png",
     "hybrid_2026102818_u1_60.png": "/fig/hybrid_2026102818_u1_60.png",
@@ -35,69 +35,6 @@
     "ssw_2026102818_u10_cap.png": "/fig/ssw_2026102818_u10_cap.png"
   },
   "cycles": {
-    "2026102612": {
-      "60|10": {
-        "ai": "ai_2026102612_u10_60.png",
-        "ensembles": "ensembles_2026102612_u10_60.png",
-        "hybrid": "hybrid_2026102612_u10_60.png",
-        "physics": "physics_2026102612_u10_60.png"
-      }
-    },
-    "2026102618": {
-      "60|10": {
-        "ai": "ai_2026102618_u10_60.png",
-        "ensembles": "ensembles_2026102618_u10_60.png",
-        "hybrid": "hybrid_2026102618_u10_60.png",
-        "physics": "physics_2026102618_u10_60.png",
-        "ssw": "ssw_2026102618_u10_60.png"
-      }
-    },
-    "2026102700": {
-      "60|10": {
-        "ai": "ai_2026102700_u10_60.png",
-        "ensembles": "ensembles_2026102700_u10_60.png",
-        "hybrid": "hybrid_2026102700_u10_60.png",
-        "physics": "physics_2026102700_u10_60.png"
-      }
-    },
-    "2026102706": {
-      "60|10": {
-        "ai": "ai_2026102706_u10_60.png",
-        "ensembles": "ensembles_2026102706_u10_60.png",
-        "hybrid": "hybrid_2026102706_u10_60.png",
-        "physics": "physics_2026102706_u10_60.png"
-      }
-    },
-    "2026102712": {
-      "0|10": {
-        "ai": "ai_2026102712_u10_0.png",
-        "ensembles": "ensembles_2026102712_u10_0.png",
-        "hybrid": "hybrid_2026102712_u10_0.png",
-        "physics": "physics_2026102712_u10_0.png",
-        "ssw": "ssw_2026102712_u10_0.png"
-      },
-      "60|10": {
-        "ai": "ai_2026102712_u10_60.png",
-        "ensembles": "ensembles_2026102712_u10_60.png",
-        "hybrid": "hybrid_2026102712_u10_60.png",
-        "physics": "physics_2026102712_u10_60.png",
-        "ssw": "ssw_2026102712_u10_60.png"
-      },
-      "70|10": {
-        "ai": "ai_2026102712_u10_70.png",
-        "ensembles": "ensembles_2026102712_u10_70.png",
-        "hybrid": "hybrid_2026102712_u10_70.png",
-        "physics": "physics_2026102712_u10_70.png",
-        "ssw": "ssw_2026102712_u10_70.png"
-      },
-      "cap|10": {
-        "ai": "ai_2026102712_u10_cap.png",
-        "ensembles": "ensembles_2026102712_u10_cap.png",
-        "hybrid": "hybrid_2026102712_u10_cap.png",
-        "physics": "physics_2026102712_u10_cap.png",
-        "ssw": "ssw_2026102712_u10_cap.png"
-      }
-    },
     "2026102818": {
       "0|10": {
         "ai": "ai_2026102818_u10_0.png",
@@ -146,52 +83,6 @@
     }
   },
   "cycle_models": {
-    "2026102612": [
-      "aifs-ens",
-      "aifs-single",
-      "eps",
-      "gefs",
-      "gefs_ctl",
-      "gefs_members",
-      "gfs",
-      "ifs"
-    ],
-    "2026102618": [
-      "aifs-ens",
-      "aifs-single",
-      "gefs",
-      "gefs_ctl",
-      "gefs_members",
-      "gfs"
-    ],
-    "2026102700": [
-      "aifs-ens",
-      "aifs-single",
-      "eps",
-      "gefs",
-      "gefs_ctl",
-      "gefs_members",
-      "gfs",
-      "ifs"
-    ],
-    "2026102706": [
-      "aifs-ens",
-      "aifs-single",
-      "gefs",
-      "gefs_ctl",
-      "gefs_members",
-      "gfs"
-    ],
-    "2026102712": [
-      "aifs-ens",
-      "aifs-single",
-      "eps",
-      "gefs",
-      "gefs_ctl",
-      "gefs_members",
-      "gfs",
-      "ifs"
-    ],
     "2026102818": [
       "aifs-ens",
       "aifs-single",
