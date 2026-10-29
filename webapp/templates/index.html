@@ -75,6 +75,11 @@
         <option value="{{ c }}" {{ 'selected' if c == cycle else '' }}>{{ cycle_labels.get(c, c) }}</option>
       {% endfor %}
     </select>
+    <select class="cycle" id="latpick" title="domain and level">
+      {% for l in lat_list %}
+        <option value="{{ l }}" {{ 'selected' if l == default_key else '' }}>{{ key_labels.get(l, l) }}</option>
+      {% endfor %}
+    </select>
   </nav>
 </header>
 
@@ -95,7 +100,7 @@
   <h2>About the data</h2>
   <div class="grid">
     <div class="card"><h3>Forecast models</h3><p>ECMWF open data (AIFS ENS 51 members, AIFS Single, IFS control, EPS 50 perturbed members) and NOAA open data (GFS deterministic, GEFS mean + control + 30 perturbed members). Raw GRIB2 is fetched straight from the archives; only the u&nbsp;@&nbsp;10&nbsp;hPa message is downloaded, using the published index files.</p></div>
-    <div class="card"><h3>Climatology</h3><p>ERA5 1991–2020 reanalysis, zonal-mean u at 60˚N, daily 12&nbsp;Z, with ±1σ and ±2σ across the 30 years. Cached locally, so every level and latitude is an instant lookup.</p></div>
+    <div class="card"><h3>Climatology</h3><p>ERA5 1991–2020 reanalysis, zonal-mean u at daily 12&nbsp;Z for the whole year, with ±1σ and ±2σ across the 30 years, for 60˚N, the 0–90˚N mean and the 65–90˚N polar cap. The charts show a 30-day running mean of it, so the band is the spread of the season rather than of a single day.</p></div>
     <div class="card"><h3>How it updates</h3><p>The watcher polls every 15&nbsp;minutes and publishes a cycle as soon as every model for it has landed; a deadline sweep at 03, 09, 15 and 21&nbsp;UTC (9&nbsp;h after each initialisation) guarantees a rebuild even if a poll was delayed. It resolves the newest published cycle, fetches only what is missing, and re-renders these charts.</p></div>
     <div class="card"><h3>06z and 18z cycles</h3><p>ECMWF publishes the IFS control and the EPS only out to 144&nbsp;h in the 06z and 18z runs, so those two models are left off the charts for those cycles. AIFS, GFS and GEFS run the full 15–16&nbsp;days and are shown in full.</p></div>
   </div>
@@ -118,9 +123,8 @@
   const CURRENT_CYCLE = {{ cycle | tojson }};
   const pick = document.getElementById('cyclepick');
   let curCycle = CURRENT_CYCLE;
-  // the domain/level picker is hidden for now (the other views still need
-  // checking before they are published) - the site shows the default view
-  let curLat = "{{ default_key }}";
+  const latpick = document.getElementById('latpick');
+  let curLat = latpick ? latpick.value : "{{ default_key }}";
   function figureFor(cycle, view, tab) {
     const v = (CYCLES[cycle] || {})[view] || {};
     if (v[tab]) return v[tab];
@@ -143,6 +147,10 @@
   applyFigures();
   if (pick) pick.addEventListener('change', () => {
     curCycle = pick.value;
+    applyFigures();
+  });
+  if (latpick) latpick.addEventListener('change', () => {
+    curLat = latpick.value;
     applyFigures();
   });
 </script>

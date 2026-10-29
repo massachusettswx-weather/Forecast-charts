@@ -56,8 +56,9 @@ def index(request: Request):
     d = latest()
     cycles = d.get("cycles", {}) or {}
     cyc_list = sorted(cycles.keys(), reverse=True)
-    lat_list = sorted({l for c in cycles.values() for l in c},
-                       key=site_meta.key_sort_key)
+    # the menu offers the published views (and only the ones the store has)
+    lat_list = [k for k in site_meta.PUBLISHED_KEYS
+                if any(k in (cycles.get(c) or {}) for c in cycles)]
     # the site shows ONE view (the default domain and level): the other views
     # are still being checked, so they are not offered yet
     default_view = site_meta.store_key(site_meta.DEFAULT_LAT,

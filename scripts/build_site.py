@@ -45,8 +45,9 @@ def main():
     if not cycles:                      # fall back to the current cycle
         cycles = {latest.get("cycle", ""): {"60": {k: v for k, v in figs.items()}}}
     cyc_list = sorted(cycles.keys(), reverse=True)
-    lat_list = sorted({l for c in cycles.values() for l in c},
-                       key=site_meta.key_sort_key)
+    # the menu offers the published views (and only the ones the store has)
+    lat_list = [k for k in site_meta.PUBLISHED_KEYS
+                if any(k in (cycles.get(c) or {}) for c in cycles)]
     # the site shows ONE view (the default domain and level): the other views
     # are still being checked, so they are not offered yet
     def _default_view(c):
@@ -69,12 +70,11 @@ def main():
     # every cycle in the picker. The other views (70N, 1 hPa, NH, polar cap)
     # are rendered and kept in the store, but they are not published - that
     # halves the Pages upload.
-    default_view = site_meta.store_key(site_meta.DEFAULT_LAT,
-                                       site_meta.DEFAULT_LEVEL)
     need = set()
     for c in cyc_list:
-        for f in (cycles.get(c, {}).get(default_view) or {}).values():
-            need.add(f)
+        for key in site_meta.PUBLISHED_KEYS:
+            for f in (cycles.get(c, {}).get(key) or {}).values():
+                need.add(f)
     names = []
     for name in sorted(need):
         src = os.path.join(FIGDIR, name)

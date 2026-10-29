@@ -37,10 +37,18 @@ LAT_LABELS = {k: v["label"] for k, v in DOMAINS.items()}
 LEVELS = [(10, "10 hPa"), (1, "1 hPa")]
 DEFAULT_LEVEL = 10
 
+# The views the site publishes. Every other view is still rendered and kept in
+# the store, but only these are offered and uploaded - the rest have not been
+# checked for accuracy yet (70N and 1 hPa are on the list to go).
+PUBLISHED_VIEWS = [("60", 10), ("0", 10), ("cap", 10)]
+
 
 def store_key(domain, level):
     """The store key for a (domain, level) pair: '60|10'."""
     return f"{domain}|{level}"
+
+
+PUBLISHED_KEYS = [store_key(d, l) for d, l in PUBLISHED_VIEWS]
 
 
 def key_label(key):
