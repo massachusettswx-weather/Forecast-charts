@@ -218,11 +218,64 @@ data/store` re-staged the figures every cycle because .gitignore does not
 apply to tracked files, and `git rm --cached` refused to remove them
 because they had just been re-rendered - it needed `-f`.
 
-## Next things worth doing
+## 2026-10-29 06:30Z - the ERA5 archive (the record was there all along)
 
-- Archive browser for older cycles.
-- Slack/webhook when a new cycle is published.
-- More models (METEO-FRANCE, UKMO, GenCast).
-- ERA5 long record (1959-2022) is building in the background - when it lands,
-  export a small summary artifact (monthly mean/sigma + record minimum) so the
-  runner can use it.
+The u cache was built for the anomalies and the archives, and then it sat
+unused while the time-height work chased more ERA5 downloads. It holds the
+zonal-mean wind at **all 37 pressure levels for every day from Oct 1959 to
+Dec 2020** - the complete 1991-2020 record plus the Oct-Dec of every year
+before it. That is a stratospheric archive and it needed no new download.
+
+**What the site gained** (a new "ERA5 archive" tab, `f2884ce`):
+- **the reversal catalogue** - every easterly episode of 4 days or more in
+  the Nov-May season that ERA5 saw, with its depth, its duration and the
+  level it reached. 49 events at 60N, 84 over the polar cap, 29 for the NH
+  mean. The criterion matches the SSW watch: westerly to easterly, deeper
+  than 5 m/s, at least four days. The record minimum (-30.8 m/s, 2016-03-15)
+  reproduces the known anchor exactly.
+- **the catalogue figure** - the whole 61-year record on one axis with the
+  events marked, and the record minimum called out.
+- **time-height cross-sections of the six deepest events** - the zonal wind
+  through the stratosphere with the anomaly against the 1991-2020
+  climatology in purple contours and the normalized anomaly alongside. The
+  2016 event shows easterly flow centred at 1-5 hPa descending to 20-30 hPa
+  with westerly flow below - the textbook signature.
+- **an interactive browser** - pick a domain and a level, then pan and zoom
+  through six decades with the climatology, its +/-2 sigma band and the
+  reversal events drawn in. The daily series is one gzipped JSON per domain
+  (~1 MB), fetched on demand.
+
+**Where the ERA5 lives** (the question that started this):
+- `data/era5_cache/` - the raw ARCO download, **gitignored, build machine
+  only**: `profiles.npy` (1.42 GB, float32 `[14000, 37, 721]`),
+  `manifest.csv`, `lat.txt`.
+- `data/era5_clim_full.json` (3.1 MB) and `data/era5_series.npz` (7.1 MB) -
+  derived from it, also gitignored.
+- `data/era5_summary.json` (590 KB) - the small artifact the charts read.
+- `data/ssw_archive.json` (85 KB) - the catalogue, **committed**.
+- `data/store/archive/` (4.9 MB) - the catalogue figure, the event figures
+  and the browsable payloads, **committed** (the runner has no ERA5 cache,
+  so these are the site's copy).
+
+**Performance work (this is what "optimize" turned up):**
+- the ERA5 export is now **one sequential pass** over the store. Reading it
+  per level meant 37 random-access passes over 850 MB on a network volume
+  and took hours; the streaming pass takes **45 seconds**.
+- every rendered figure is quantised to a 256-colour palette - the charts
+  have few colours, so this cuts them to about a third with no visible
+  difference. The forecast figures went **13.5 MB -> 6.0 MB**.
+- the site build **clears its output folder first**: a stale figure from an
+  older cycle was being uploaded with the new site (that is where the 23 MB
+  preview came from).
+- the site serves the PNGs only; the PDF twins stay in the store.
+
+**The z/T downloads are stopped and the partial caches deleted** (2.8 GB).
+ARCO has no monthly-mean pressure-level product and no near-real-time
+pressure-level store, so z and T would have cost 3.2 h each at the measured
+75 MB/s ceiling (the ceiling is bandwidth, not thread count - 12, 32 and 64
+threads all give the same 75 MB/s). Nothing the site does needs them: the
+u record already carries the wind, the anomalies and the archive. If the
+temperature/geopotential panels are wanted later, the ERA5 u cache is not
+the place to get them - the model forecast overlay is.
+
+
