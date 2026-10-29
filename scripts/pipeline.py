@@ -655,8 +655,21 @@ def _sync(level, lat, only, members, force):
     newest = max(candidates)
     cycle, core_ok = pick_cycle(candidates, have_models)
     if cycle is None:
-        log("no cycles available")
-        return
+        # No cycle is complete yet - the newest one is still missing a model
+        # (the ECMWF publishes the AIFS ENS hours after the initialisation).
+        # Publishing nothing would leave the site with a stale chart, and
+        # publishing a cycle whose figures were never rendered would leave it
+        # with no chart at all. So: re-render and re-publish the last cycle
+        # that was published, from the series that are still in the store.
+        prev_pub = st.get("rendered_cycle")
+        log(f"no cycle is complete yet (newest {newest}) - "
+            f"re-rendering the last published cycle {prev_pub}")
+        if not prev_pub:
+            log("no cycles available")
+            return
+        cycle = prev_pub
+        core_ok = True
+        force = True
     have = available_models(cycle, level)
     wanted = models_for_cycle(cycle)
     past_deadline = datetime.utcnow() >= cycle_deadline(cycle)
@@ -687,9 +700,26 @@ def _sync(level, lat, only, members, force):
         missing = sorted((set(wanted) - set(EXTRA)) - have)
         log(f"cycle {cycle}: waiting for {len(missing)} more model(s) "
             f"({', '.join(missing)}) - not publishing a partial cycle")
-        # the store is still written below, so its layout never goes stale
-        outs = [os.path.join(FIGDIR, f) for f in os.listdir(FIGDIR)
-                if f"_{cycle}_" in f and f.endswith(".png")]
+        # The site must keep showing a COMPLETE chart set. The runner's
+        # workspace starts empty, so the figures of the last published cycle
+        # are not on disk - re-render them from the series that are still in
+        # the store, and publish that cycle again.
+        prev_pub = st.get("rendered_cycle")
+        if prev_pub and prev_pub != cycle:
+            log(f"  re-rendering the last published cycle {prev_pub}")
+            outs = render_all(prev_pub, level, lat)
+            cycle = prev_pub
+            have = available_models(cycle, level)
+            sig = series_signature(cycle, level)
+            rendered[prev_pub] = sorted(have)
+            st["rendered_models"] = rendered
+            st.setdefault("rendered_sig", {})[prev_pub] = [list(x) for x in sig]
+            st["rendered_cycle"] = prev_pub
+            st["partial"] = False
+            json.dump(st, open(stf, "w"), indent=2)
+        else:
+            outs = [os.path.join(FIGDIR, f) for f in os.listdir(FIGDIR)
+                    if f"_{cycle}_" in f and f.endswith(".png")]
         changed = False
     else:
         tag = "complete" if core_ok else "PARTIAL (deadline reached)"
@@ -707,7 +737,7 @@ def _sync(level, lat, only, members, force):
     # that was published - otherwise the label and the chart disagree.
     if not outs:
         prev_pub = st.get("rendered_cycle")
-        if prev_pub and prev_pub != cycle:
+        if prev_pub:
             log(f"  cycle {cycle} has no figures yet - re-rendering the last "
                 f"published cycle {prev_pub}")
             outs = render_all(prev_pub, level, lat)
