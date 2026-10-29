@@ -578,6 +578,16 @@ def sync(level=10, lat=60.0, only=None, members=True, force=False):
             pass
 
 
+def last_published(status):
+    """The cycle that was published last.
+
+    The status file has always written "rendered"; "rendered_cycle" is the
+    newer name and is only set when a cycle is actually rendered. Read both,
+    so the fallback to re-publish the last good cycle always finds it.
+    """
+    return status.get("rendered_cycle") or status.get("rendered") or None
+
+
 def _sync(level, lat, only, members, force):
     status = {}
     stf = os.path.join(STORE, "status.json")
@@ -661,7 +671,7 @@ def _sync(level, lat, only, members, force):
         # publishing a cycle whose figures were never rendered would leave it
         # with no chart at all. So: re-render and re-publish the last cycle
         # that was published, from the series that are still in the store.
-        prev_pub = st.get("rendered_cycle")
+        prev_pub = last_published(st)
         log(f"no cycle is complete yet (newest {newest}) - "
             f"re-rendering the last published cycle {prev_pub}")
         if not prev_pub:
@@ -704,7 +714,7 @@ def _sync(level, lat, only, members, force):
         # workspace starts empty, so the figures of the last published cycle
         # are not on disk - re-render them from the series that are still in
         # the store, and publish that cycle again.
-        prev_pub = st.get("rendered_cycle")
+        prev_pub = last_published(st)
         if prev_pub and prev_pub != cycle:
             log(f"  re-rendering the last published cycle {prev_pub}")
             outs = render_all(prev_pub, level, lat)
@@ -715,6 +725,7 @@ def _sync(level, lat, only, members, force):
             st["rendered_models"] = rendered
             st.setdefault("rendered_sig", {})[prev_pub] = [list(x) for x in sig]
             st["rendered_cycle"] = prev_pub
+            st["rendered"] = prev_pub
             st["partial"] = False
             json.dump(st, open(stf, "w"), indent=2)
         else:
@@ -729,6 +740,7 @@ def _sync(level, lat, only, members, force):
         st["rendered_models"] = rendered
         st.setdefault("rendered_sig", {})[cycle] = [list(x) for x in sig]
         st["rendered_cycle"] = cycle
+        st["rendered"] = cycle
         st["partial"] = not core_ok
         json.dump(st, open(stf, "w"), indent=2)
 
@@ -736,7 +748,7 @@ def _sync(level, lat, only, members, force):
     # rendered yet (a model is still missing), the site keeps the last cycle
     # that was published - otherwise the label and the chart disagree.
     if not outs:
-        prev_pub = st.get("rendered_cycle")
+        prev_pub = last_published(st)
         if prev_pub:
             log(f"  cycle {cycle} has no figures yet - re-rendering the last "
                 f"published cycle {prev_pub}")
