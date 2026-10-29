@@ -119,13 +119,18 @@ def main():
                 break
         tabs.append(dict(key=key, title=title, blurb=blurb, img=img))
 
-    # Copy only the figures the site actually serves: the default view of
-    # every cycle in the picker. The other views (70N, 1 hPa, NH, polar cap)
-    # are rendered and kept in the store, but they are not published - that
-    # halves the Pages upload.
+    # Copy only the figures the site actually serves. With the picker on
+    # that is every published view of every cycle; with it off the site
+    # shows the default view only, so the rest are not uploaded. The
+    # figures stay in the store either way - they are just not carried.
+    if site_meta.PICKER_ENABLED:
+        upload_keys = site_meta.PUBLISHED_KEYS
+    else:
+        upload_keys = [site_meta.store_key(site_meta.DEFAULT_LAT,
+                                            site_meta.DEFAULT_LEVEL)]
     need = set()
     for c in cyc_list:
-        for key in site_meta.PUBLISHED_KEYS:
+        for key in upload_keys:
             for f in (cycles.get(c, {}).get(key) or {}).values():
                 need.add(f)
     names = []
@@ -195,7 +200,8 @@ def main():
                       cycles_json=_json.dumps(cycles),
                       age_hours=age_h, valid_from=valid_from, valid_to=valid_to,
                       sources=site_meta.SOURCES, partial_badge=partial_badge,
-                      archive=archive)
+                      archive=archive,
+                      picker_enabled=site_meta.PICKER_ENABLED)
     with open(os.path.join(out, "index.html"), "w") as fh:
         fh.write(html)
     json.dump(latest, open(os.path.join(out, "latest.json"), "w"), indent=2)

@@ -153,6 +153,7 @@ def index(request: Request):
         "age_hours": age_h, "valid_from": valid_from, "valid_to": valid_to,
         "sources": site_meta.SOURCES, "partial_badge": partial_badge,
         "archive": archive_tab(),
+        "picker_enabled": site_meta.PICKER_ENABLED,
     })
 
 

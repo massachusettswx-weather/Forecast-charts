@@ -42,6 +42,11 @@ DEFAULT_LEVEL = 10
 # checked for accuracy yet (70N and 1 hPa are on the list to go).
 PUBLISHED_VIEWS = [("60", 10), ("0", 10), ("cap", 10)]
 
+# The domain/level picker in the header. Off for now: the site shows the
+# default view only, and the ERA5 archive carries its own domain/level
+# selector. Flip this to True to bring the picker back.
+PICKER_ENABLED = False
+
 
 def store_key(domain, level):
     """The store key for a (domain, level) pair: '60|10'."""
