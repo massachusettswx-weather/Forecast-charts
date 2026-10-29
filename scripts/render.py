@@ -75,6 +75,27 @@ def clim_kwargs(domain):
     return {"lat_range": spec["range"]}
 
 
+def _smooth30(daily, win=30):
+    """A centred 30-day running mean over the calendar year.
+
+    The daily climatology is a 30-year mean per calendar day, so each day's
+    sigma comes from only 30 samples - noisy enough to make the +/-1 sigma
+    band ragged. A 30-day window turns it into the spread of the *seasonal*
+    state, which is what the band is there to show, and it smooths the
+    climatology line the same way. The calendar wraps (Dec -> Jan).
+    """
+    keys = sorted(daily)
+    if not keys:
+        return daily
+    vals = np.array([daily[k] for k in keys], float)
+    n = len(vals)
+    ext = np.concatenate([vals, vals, vals])
+    out = {}
+    for i, k in enumerate(keys):
+        lo = n + i - win // 2
+        out[k] = float(np.nanmean(ext[lo:lo + win]))
+    return out
+
 def load_clim(level, domain, t0, t1):
     """The ERA5 climatology (mean, sigma) for this level and domain.
 
@@ -90,6 +111,8 @@ def load_clim(level, domain, t0, t1):
         mean, std, _ = EC.climatology(level,
                                       start=f"{t0.month:02d}-{t0.day:02d}",
                                       end=f"{t1.month:02d}-{t1.day:02d}", **kw)
+    mean, std = _smooth30(mean), _smooth30(std)
+
     def pick(times):
         out = []
         for t in times:

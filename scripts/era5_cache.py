@@ -99,7 +99,9 @@ def manifest(var="u"):
 # rewrote the whole file (245 MB and growing) on every flush, and on this
 # network volume that read+write dominated the build (minutes per flush).
 # With the memmap a flush only writes the new rows.
-CAPACITY = 11000         # rows: 30 years x 365 days = 10950
+CAPACITY = 14000         # rows: 30 years x 365 days = 10950, plus the
+                        # 1959-1990 rows still in the store (the resize
+                        # rewrites the whole file, so do it once)
 
 
 def _append(rows, profiles, var="u"):
