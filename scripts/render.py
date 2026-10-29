@@ -119,13 +119,13 @@ def load_clim(level, domain, t0, t1):
     def pick(times):
         out = []
         for t in times:
-            k = f"{t.month}-{t.day}-12"
+            k = f"{t.month:02d}-{t.day:02d}-12"
             out.append(float(mean.get(k, np.nan)))
         return np.array(out)
     def pick_sd(times):
         out = []
         for t in times:
-            k = f"{t.month}-{t.day}-12"
+            k = f"{t.month:02d}-{t.day:02d}-12"
             out.append(float(std.get(k, np.nan)))
         return np.array(out)
     return pick, pick_sd
