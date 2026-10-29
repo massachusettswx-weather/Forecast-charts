@@ -145,6 +145,34 @@ Fix (commit `a9c5788`):
   process does not. Keep a tool call going every ~20 minutes, or restart
   the build when a check-in finds it gone.
 
+## 2026-10-29 02:20Z - the charts were 404-ing for an hour
+
+Symptom: the site header still said `12z 28 Oct` and every chart was a 404.
+The published `latest.json` was fine, but no figure was published with it.
+
+Cause (three bugs in a row, all in the same path):
+1. The ECMWF publishes the AIFS ENS hours after the initialisation, so for a
+   while after a cycle the newest one is missing a model. The pipeline took
+   the "waiting for more models" branch and published nothing - and since the
+   runner's workspace starts empty, the store had no figures at all.
+2. The fallback to re-publish the last good cycle looked up
+   `status.json["rendered_cycle"]`, but the status file has always written
+   `"rendered"` - the lookup was always `None`, so the fallback never fired.
+3. `era5_cache.climatology()` returns pandas Series, not dicts, so the new
+   30-day smoother sorted the Series' *values* and raised `KeyError` on a
+   float; and the published artifact keyed its values `MM-DD` while the
+   charts look them up as `MM-DD-12`.
+
+Fixes: the pipeline now re-renders and re-publishes the last published cycle
+whenever the newest one is incomplete (from the series still in the store),
+`last_published()` reads the key that exists, the smoother handles Series and
+dicts, and the artifact uses the raw cache's key format. All four were
+reproduced locally before pushing.
+
+Lesson: reproduce the failure locally before pushing a fix - the runner's
+logs need auth and cannot be read from the sandbox, so the local store and a
+local pipeline run are the only diagnostic tools that work.
+
 ## Next things worth doing
 
 - Archive browser for older cycles.
