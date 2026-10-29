@@ -103,6 +103,48 @@ Fix (commit `a9c5788`):
 - `RENDER_VERSION` - a style change now forces a re-render, so a figure fix
   reaches the site immediately instead of waiting for the next cycle.
 
+## 2026-10-29 00:10Z - what changed while the ERA5 build ran
+
+**Site (published)**
+- the domain/level picker is gone: the site shows only the default 60N /
+  10 hPa view. The other views (70N, 1 hPa, NH, polar cap) are still
+  rendered and kept in the store, just not offered - they need checking
+  before they go back on the menu.
+- the "Models on this chart" table and its note are gone; the cycle picker
+  stays.
+- the tab images are now taken strictly from the default view. Before, a
+  cycle that lacked it silently showed another view's figure.
+- the SSW panel's ERA5 record-min/max box is gone, and the season
+  statistics now use Nov -> May (the query windows can wrap the year end).
+
+**Payloads (the hosts are cheaper now)**
+- the Pages upload carries only the figures the site serves (the default
+  view of every cycle): 21 MB -> 8.3 MB, 52 -> 27 figures.
+- the ERA5 climatology the site reads is now a small published artifact
+  (per-calendar-day mean/sigma per domain and level, a few hundred KB)
+  instead of the raw profiles. The ~850 MB of raw ERA5 and the 27 MB slim
+  cache stay off the hosts; the raw cache is still a fallback until the
+  artifact lands.
+
+**ERA5**
+- the cache is 1991-2020, all year (it was Oct-Dec, and 1959-2022). The
+  record statistics stay seasonal: an all-year minimum at 60N/10 hPa is a
+  *summer* value (-11 m/s in June, the summer polar easterly), which would
+  be a meaningless yardstick for a vortex reversal. An Oct-Dec window would
+  have missed the January-February minima, hence Nov-May.
+- the store was missing `lat.txt`, which the slim export copies and the
+  NH / polar-cap queries need; the build now writes it.
+- verified against the data: 60N u@10 hPa runs 32.6 m/s in January, crosses
+  zero in April, bottoms near -11 m/s in June, and returns to 30 m/s in
+  December. 100 hPa is a different, much weaker profile.
+
+**The sandbox is a burstable pod**
+- it gets evicted roughly 30 minutes after the last tool call, which kills
+  the ERA5 build and its watchdog. The store survives (it is on the
+  persistent volume), so a restart resumes from the manifest - but the
+  process does not. Keep a tool call going every ~20 minutes, or restart
+  the build when a check-in finds it gone.
+
 ## Next things worth doing
 
 - Archive browser for older cycles.
