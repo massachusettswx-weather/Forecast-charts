@@ -44,10 +44,14 @@ def available(path=None):
 
 
 def _md_table(dates, values):
-    """{'MM-DD': value} from the artifact's parallel date/value lists."""
+    """{'MM-DD-12': value} from the artifact's parallel date/value lists.
+
+    The key format has to match the raw cache (month-day-hour), because the
+    charts look the climatology up the same way in both cases.
+    """
     out = {}
     for d, v in zip(dates, values):
-        out[d[5:]] = float(v)
+        out[f"{d[5:]}-12"] = float(v)
     return out
 
 

@@ -84,6 +84,9 @@ def _smooth30(daily, win=30):
     state, which is what the band is there to show, and it smooths the
     climatology line the same way. The calendar wraps (Dec -> Jan).
     """
+    # the raw cache hands back a pandas Series, the published artifact a dict
+    if hasattr(daily, "to_dict"):
+        daily = daily.to_dict()
     keys = sorted(daily)
     if not keys:
         return daily
