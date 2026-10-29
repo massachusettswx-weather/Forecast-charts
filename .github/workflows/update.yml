@@ -121,7 +121,9 @@ jobs:
           # the figures are a build artifact (the Pages upload carries them):
           # untrack them, or every cycle commits another few MB of PNGs.
           # .gitignore does not help - it does not apply to tracked files.
-          git rm -r --cached --quiet data/store/figures 2>/dev/null || true
+          # -f is needed: the figures were just re-rendered, so they have
+          # local modifications and git refuses to untrack them otherwise
+          git rm -r --cached -f --quiet data/store/figures 2>/dev/null || true
           git add -A data/store || true
           git diff --staged --quiet || git commit -m "charts: $(date -u +%Y-%m-%dT%H:%MZ)"
           git push || echo "push failed (permissions?) - Pages artifact below"
