@@ -119,7 +119,7 @@ def main():
         vals = {}
         for lev in (10, 100):
             mean, _, _ = clim_artifact.climatology(lev, "60")
-            xs = [mean.get(f"{d.month:02d}-{d.day:02d}", _np.nan) for d in days]
+            xs = [mean.get(f"{d.month:02d}-{d.day:02d}-12", _np.nan) for d in days]
             vals[lev] = _np.nanmean(xs) if len(xs) else _np.nan
         v10, v100 = float(vals[10]), float(vals[100])
         check(15 < v10 < 35, f"ERA5 clim at 10 hPa = {v10:.1f} m/s",

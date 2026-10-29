@@ -85,4 +85,4 @@ def record_min(level, domain, path=None):
 def mean_at(level, domain, month, day, path=None):
     """The climatological mean for one calendar day (NaN if missing)."""
     mean, _, _ = climatology(level, domain, path)
-    return mean.get(f"{int(month):02d}-{int(day):02d}", float("nan"))
+    return mean.get(f"{int(month):02d}-{int(day):02d}-12", float("nan"))

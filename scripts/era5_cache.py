@@ -268,7 +268,11 @@ def climatology(level_hPa, lat=None, start="01-01", end="12-31",
     else:
         j = int(np.abs(latv - float(lat)).argmin())
         vals = block[:, j]
-    key = sel["month"].astype(str) + "-" + sel["day"].astype(str) + "-" + sel["hour"].astype(str)
+    # zero-pad, so the keys sort as the calendar does and match what the
+    # charts look up ("MM-DD-12"); unpadded keys sorted as 10-1, 10-10, 10-2...
+    key = (sel["month"].astype(str).str.zfill(2) + "-" +
+           sel["day"].astype(str).str.zfill(2) + "-" +
+           sel["hour"].astype(str).str.zfill(2))
     g = pd.DataFrame({"k": key.to_numpy(), "v": vals}).groupby("k")["v"]
     mean, std, cnt = g.mean(), g.std(), g.count()
     return mean, std, cnt

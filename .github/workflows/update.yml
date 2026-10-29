@@ -59,12 +59,10 @@ jobs:
           pip install -r requirements.txt
           pip install eccodes cfgrib || true     # GRIB decode for the fetchers
 
-      - name: Restore the ERA5 climatology cache
-        uses: actions/cache@v4
-        with:
-          path: data/era5_cache_slim
-          key: era5-slim-v1-${{ hashFiles('scripts/export_era5_slim.py') }}
-          restore-keys: era5-slim-v1-
+      # The ERA5 climatology the charts read is the small published artifact
+      # (data/era5_summary.json, committed to the repo): a per-calendar-day
+      # mean and sigma per domain and level. The raw ERA5 profiles stay on
+      # the build machine, so nothing large is cached or uploaded.
 
       - name: Restore the GRIB index cache
         uses: actions/cache@v4

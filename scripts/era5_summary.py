@@ -66,10 +66,15 @@ def main():
             try:
                 mean, sd, cnt = E.climatology(lev, years=years, start=a.start,
                                               end=a.end, **kw)
-                idx = pd.date_range(f"{y0}-{a.start}", periods=len(mean),
-                                    freq="D")
+                # the dates have to come from the climatology's own index:
+                # a synthetic date range drifts against it (a leap day, and
+                # the fact that the index is the union of the calendar days)
+                dates = []
+                for k in mean.index:
+                    mm, dd = str(k)[:2], str(k)[3:5]
+                    dates.append(f"{y0}-{mm}-{dd}")
                 out["climatology"][key] = {
-                    "dates": [str(d.date()) for d in idx],
+                    "dates": dates,
                     "mean": [float(x) for x in np.asarray(mean).ravel()],
                     "sigma": [float(x) for x in np.asarray(sd).ravel()],
                     "n": [int(x) for x in np.asarray(cnt).ravel()]}

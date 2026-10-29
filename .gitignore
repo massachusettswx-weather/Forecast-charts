@@ -1,5 +1,8 @@
 venv/
 data/era5_cache/
+# the slim raw cache is not needed any more: the charts read the small
+# published artifact (data/era5_summary.json) instead
+data/era5_cache_slim/
 data/idx/
 data/*.npz
 data/store/series/
