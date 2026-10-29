@@ -30,6 +30,20 @@
   main { padding-top:14px; padding-bottom:30px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
   .card img { width:100%; height:auto; display:block; border-radius:4px; }
+  /* the archive browser */
+  .archbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:10px;
+             font-size:13px; color:var(--mut); }
+  .archbar label { display:inline-flex; gap:6px; align-items:center; }
+  .archbar select, .archbar button { font:inherit; font-size:13px; padding:5px 9px;
+             border:1px solid var(--line); border-radius:7px; background:var(--card); color:var(--ink); }
+  .archbar button { cursor:pointer; }
+  .archbar button:hover { border-color:var(--mut); }
+  .archhint { margin-left:auto; font-size:12px; opacity:.75; }
+  .archwrap { position:relative; }
+  #arch-canvas { width:100%; height:auto; display:block; border-radius:6px; cursor:crosshair; }
+  .archtip { position:absolute; display:none; pointer-events:none; background:rgba(16,20,24,.94);
+             color:#f2f5f7; padding:7px 9px; border-radius:7px; font-size:12.5px; line-height:1.45;
+             box-shadow:0 3px 14px rgba(0,0,0,.28); z-index:5; white-space:nowrap; }
   .blurb { color:var(--mut); font-size:13px; margin:2px 0 12px; }
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; }
   .grid .card { padding:13px 15px; }
@@ -70,6 +84,9 @@
     {% for t in tabs %}
       <button class="tab" role="tab" data-key="{{ t.key }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ t.title }}</button>
     {% endfor %}
+    {% if archive %}
+      <button class="tab" role="tab" data-key="archive" aria-selected="false">ERA5 archive</button>
+    {% endif %}
     <select class="cycle" id="cyclepick" title="forecast cycle">
       {% for c in cycle_list %}
         <option value="{{ c }}" {{ 'selected' if c == cycle else '' }}>{{ cycle_labels.get(c, c) }}</option>
@@ -96,6 +113,61 @@
     </div>
   </section>
   {% endfor %}
+
+  {% if archive %}
+  <section class="panel" data-key="archive" hidden>
+    <div class="blurb">The ERA5 record itself, 1959–2020: every reversal of the polar vortex that the reanalysis saw, with the depth of each one. Drawn once from the reanalysis and carried by the site — it does not change with the forecast cycle.</div>
+    <div class="card">
+      <img src="{{ archive.catalogue }}" alt="ERA5 stratosphere archive: every reversal event 1959-2020">
+    </div>
+
+    <h2>Browse the record</h2>
+    <div class="card">
+      <div class="archbar">
+        <label>domain
+          <select id="arch-dom">
+            <option value="60">60˚N</option>
+            <option value="70">70˚N</option>
+            <option value="0">NH (0–90˚N)</option>
+            <option value="cap">Polar cap (65–90˚N)</option>
+          </select>
+        </label>
+        <label>level <select id="arch-lev"></select></label>
+        <button id="arch-in" type="button">zoom in</button>
+        <button id="arch-out" type="button">zoom out</button>
+        <button id="arch-all" type="button">whole record</button>
+        <span class="archhint">drag to pan · scroll to zoom</span>
+      </div>
+      <div class="archwrap">
+        <canvas id="arch-canvas" width="1400" height="440"></canvas>
+        <div id="arch-tip" class="archtip"></div>
+      </div>
+      <p style="margin:12px 0 0;font-size:13px;color:var(--mut)">
+        The blue line is the ERA5 zonal-mean wind, the black line the 1991–2020
+        climatology for the same calendar day with the ±2σ band, and the red
+        marks the reversal events. The series covers {{ archive.record_start }} –
+        {{ archive.record_end }}: every day from Oct 1959 to Dec 2020, and the
+        complete 1991–2020 record.
+      </p>
+    </div>
+
+    {% if archive.events %}
+    <h2>The deepest events</h2>
+    <div class="grid">
+      {% for e in archive.events %}
+      <div class="card">
+        <img src="{{ e.img }}" alt="ERA5 time-height cross-section, {{ e.date }}">
+        <p style="margin:10px 0 0;font-size:13.5px;color:var(--mut)">
+          {% if e.min is defined %}<strong style="color:var(--ink)">{{ e.date }}</strong> —
+          {{ '%.1f'|format(e.min) }} m/s for {{ e.days }} days, deepest at
+          {{ e.level }} hPa{% else %}<strong style="color:var(--ink)">{{ e.date }}</strong>{% endif %}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
 
   <h2>About the data</h2>
   <div class="grid">
@@ -139,6 +211,8 @@
   }
   function applyFigures() {
     panels.forEach(p => {
+      // the ERA5 archive does not depend on the cycle
+      if (p.dataset.key === 'archive') return;
       const img = document.getElementById('img-' + p.dataset.key);
       const f = figureFor(curCycle, curLat, p.dataset.key);
       if (img && f) img.src = 'fig/' + f;
@@ -154,5 +228,14 @@
     applyFigures();
   });
 </script>
+{% if archive %}
+<script>
+  window.ARCHIVE = {
+    enabled: true,
+    events: {{ archive.events_json | safe }}
+  };
+</script>
+<script src="static/archive.js"></script>
+{% endif %}
 </body>
 </html>

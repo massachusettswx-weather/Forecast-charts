@@ -152,6 +152,27 @@ def _finish(fig, ax, title, sub, tmin, tmax, ylim):
     fig.subplots_adjust(left=0.062, right=0.988, top=0.905, bottom=0.062)
 
 
+
+def _quantize_png(path):
+    """Shrink the PNG.
+
+    The charts have few colours, so a 256-colour palette cuts the file to
+    about a third of its size with no visible difference. The site serves
+    these, and every kilobyte is upload time and Pages storage.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return path
+    try:
+        im = Image.open(path).convert("RGB")
+        q = im.quantize(colors=256, method=Image.MEDIANCUT,
+                        dither=Image.FLOYDSTEINBERG)
+        q.save(path, optimize=True)
+    except Exception:
+        pass
+    return path
+
 def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
     """S: dict of series -> (times, values)."""
     cyc_h = cycle[8:10]
@@ -250,6 +271,7 @@ def render_tab(tab, S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis)
     fig.savefig(out_png, dpi=200)
     fig.savefig(out_png.replace(".png", ".pdf"))
     plt.close(fig)
+    _quantize_png(out_png)
     return out_png
 
 
@@ -375,4 +397,5 @@ def render_ssw(S, clim_pick, clim_sd, out_png, level, lat, cycle, analysis):
     fig.savefig(out_png, dpi=200)
     fig.savefig(out_png.replace(".png", ".pdf"))
     plt.close(fig)
+    _quantize_png(out_png)
     return out_png

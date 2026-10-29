@@ -19,3 +19,8 @@ __pycache__/
 attachments/
 /*.html
 /*.idx
+# The ERA5 working set: the raw 1.4 GB store plus the derived full-resolution
+# climatology and daily series. The build machine keeps them; the site is
+# served the small artifacts (data/era5_summary.json, data/ssw_archive.json)
+# and the pre-rendered archive figures.
+data/era5_clim_full.json

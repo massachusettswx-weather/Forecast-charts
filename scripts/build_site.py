@@ -27,12 +27,65 @@ TABS = [("physics", "Physics-based", "ECMWF IFS + EPS, NOAA GFS + GEFS"),
         ("ensembles", "Ensembles (members)", "member spaghetti + mean/control"),
         ("ssw", "SSW watch", "% of members easterly for 24 h or more - the reversal probability")]
 
+# The ERA5 archive does not change with the forecast cycle - it is the
+# 1959-2020 reanalysis record, drawn once and carried by the site.
+ARCHIVE_DIR = os.path.join(STORE, "archive")
+ARCHIVE_JSON = os.path.join(ROOT, "data", "ssw_archive.json")
+
+
+def _archive():
+    """The archive tab: the catalogue and the event gallery."""
+    if not os.path.isdir(ARCHIVE_DIR):
+        return None
+    cat = os.path.join(ARCHIVE_DIR, "catalogue.png")
+    if not os.path.exists(cat):
+        return None
+    events = []
+    for f in sorted(os.listdir(ARCHIVE_DIR)):
+        if not f.startswith("event_") or not f.endswith(".png"):
+            continue
+        date = f[len("event_"):-len(".png")]
+        events.append({"date": date, "img": "fig/" + f})
+    if not os.path.exists(ARCHIVE_JSON):
+        return None
+    try:
+        meta = json.load(open(ARCHIVE_JSON))
+    except Exception:
+        return None
+    ev = {e["start"]: e for e in (meta.get("domains", {})
+                                       .get(meta.get("domain", "60"), {})
+                                       .get("events") or [])}
+    for e in events:
+        rec = ev.get(e["date"])
+        if rec:
+            e["min"] = rec["min"]
+            e["days"] = rec["days"]
+            e["level"] = rec.get("min_level")
+    # every event of the catalogue, for the browser's markers
+    all_ev = [{"start": r["start"], "min": r["min"], "days": r["days"],
+               "end": r["end"], "min_level": r.get("min_level")}
+              for r in (meta.get("domains", {})
+                        .get(meta.get("domain", "60"), {})
+                        .get("events") or [])]
+    return {"catalogue": "fig/catalogue.png", "events": events,
+            "events_json": json.dumps(all_ev),
+            "record_start": (meta.get("record") or {}).get("start"),
+            "record_end": (meta.get("record") or {}).get("end"),
+            "n_events": meta.get("domains", {})
+                                 .get(meta.get("domain", "60"), {})
+                                 .get("n_events"),
+            "level": meta.get("level")}
+
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(ROOT, "site_out"))
     a = ap.parse_args()
     out = a.out
+    # start from an empty output folder: a stale figure from an earlier
+    # cycle would otherwise be uploaded with the new site
+    if os.path.isdir(out):
+        shutil.rmtree(out)
     os.makedirs(os.path.join(out, "fig"), exist_ok=True)
 
     latest = {}
@@ -77,10 +130,32 @@ def main():
                 need.add(f)
     names = []
     for name in sorted(need):
+        # the site serves the PNGs; the PDF twins are for the download link
+        # only and are not uploaded
+        if not name.endswith(".png"):
+            continue
         src = os.path.join(FIGDIR, name)
         if os.path.exists(src):
             shutil.copy(src, os.path.join(out, "fig", name))
             names.append(name)
+
+    # the ERA5 archive: the catalogue, the event gallery and the browsable
+    # daily series (one gzipped JSON per domain, fetched on demand)
+    archive = _archive()
+    if archive:
+        for name in sorted(os.listdir(ARCHIVE_DIR)):
+            if name.endswith(".png") or name.endswith(".json.gz"):
+                shutil.copy(os.path.join(ARCHIVE_DIR, name),
+                            os.path.join(out, "fig", name))
+                names.append(name)
+        archive["events_json"] = json.dumps(archive["events"])
+        archive["record_start"] = archive.get("record_start", "1959-10-01")
+        archive["record_end"] = archive.get("record_end", "2020-12-31")
+        # the browser script travels with the site
+        js = os.path.join(ROOT, "webapp", "static", "archive.js")
+        if os.path.exists(js):
+            os.makedirs(os.path.join(out, "static"), exist_ok=True)
+            shutil.copy(js, os.path.join(out, "static", "archive.js"))
 
     from datetime import datetime, timezone
     cyc = latest.get("cycle", "")
@@ -119,7 +194,8 @@ def main():
                       cycle_list=cyc_list, cycle_labels=labels,
                       cycles_json=_json.dumps(cycles),
                       age_hours=age_h, valid_from=valid_from, valid_to=valid_to,
-                      sources=site_meta.SOURCES, partial_badge=partial_badge)
+                      sources=site_meta.SOURCES, partial_badge=partial_badge,
+                      archive=archive)
     with open(os.path.join(out, "index.html"), "w") as fh:
         fh.write(html)
     json.dump(latest, open(os.path.join(out, "latest.json"), "w"), indent=2)

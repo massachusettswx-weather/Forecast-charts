@@ -19,7 +19,7 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -39,6 +39,48 @@ TABS = [("physics", "Physics-based", "ECMWF IFS + EPS, NOAA GFS + GEFS"),
         ("hybrid", "Hybrid (physics + AI)", "every model on one graph"),
         ("ensembles", "Ensembles (members)", "member spaghetti + mean/control"),
         ("ssw", "SSW watch", "% of members easterly for 24 h or more - the reversal probability")]
+
+# The ERA5 archive does not change with the forecast cycle - it is the
+# 1959-2020 reanalysis record, drawn once and served by the app.
+ARCHIVE_DIR = os.path.join(STORE, "archive")
+ARCHIVE_JSON = os.path.join(ROOT, "data", "ssw_archive.json")
+
+
+def archive_tab():
+    """The archive tab: the catalogue and the event gallery."""
+    if not os.path.isdir(ARCHIVE_DIR):
+        return None
+    cat = os.path.join(ARCHIVE_DIR, "catalogue.png")
+    if not os.path.exists(cat) or not os.path.exists(ARCHIVE_JSON):
+        return None
+    events = []
+    for f in sorted(os.listdir(ARCHIVE_DIR)):
+        if f.startswith("event_") and f.endswith(".png"):
+            events.append({"date": f[len("event_"):-len(".png")],
+                           "img": "/fig/" + f})
+    try:
+        meta = json.load(open(ARCHIVE_JSON))
+    except Exception:
+        return None
+    dom = meta.get("domain", "60")
+    ev = {e["start"]: e for e in (meta.get("domains", {}).get(dom, {})
+                                    .get("events") or [])}
+    for e in events:
+        rec = ev.get(e["date"])
+        if rec:
+            e["min"] = rec["min"]
+            e["days"] = rec["days"]
+            e["level"] = rec.get("min_level")
+    all_ev = [{"start": r["start"], "min": r["min"], "days": r["days"],
+               "end": r["end"], "min_level": r.get("min_level")}
+              for r in (meta.get("domains", {}).get(dom, {})
+                        .get("events") or [])]
+    return {"catalogue": "/fig/catalogue.png", "events": events,
+            "events_json": json.dumps(all_ev),
+            "record_start": (meta.get("record") or {}).get("start"),
+            "record_end": (meta.get("record") or {}).get("end"),
+            "n_events": meta.get("domains", {}).get(dom, {}).get("n_events"),
+            "level": meta.get("level")}
 
 
 def latest():
@@ -110,6 +152,7 @@ def index(request: Request):
         "cycles_json": json.dumps(cycles),
         "age_hours": age_h, "valid_from": valid_from, "valid_to": valid_to,
         "sources": site_meta.SOURCES, "partial_badge": partial_badge,
+        "archive": archive_tab(),
     })
 
 
@@ -130,8 +173,26 @@ def healthz():
 def fig(name: str):
     p = os.path.join(FIGDIR, os.path.basename(name))
     if not os.path.exists(p):
+        # the ERA5 archive figures live in their own folder
+        p = os.path.join(ARCHIVE_DIR, os.path.basename(name))
+    if not os.path.exists(p):
         raise HTTPException(404, "no such figure")
     return FileResponse(p, media_type="image/png" if name.endswith(".png") else "application/pdf")
+
+
+@app.get("/api/archive/u/{domain}")
+def archive_series(domain: str):
+    """The daily ERA5 series for one domain, unzipped (the browser asks for
+    this when the browser cannot decompress the gzip itself)."""
+    p = os.path.join(ARCHIVE_DIR, f"u_{os.path.basename(domain)}.json.gz")
+    if not os.path.exists(p):
+        raise HTTPException(404, "no such series")
+    try:
+        import gzip
+        with gzip.open(p, "rb") as fh:
+            return Response(fh.read(), media_type="application/json")
+    except Exception as exc:
+        raise HTTPException(500, f"cannot read the series: {exc}")
 
 
 @app.get("/api/series/{model}")

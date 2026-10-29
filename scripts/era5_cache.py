@@ -399,3 +399,44 @@ if __name__ == "__main__":
             md = (m["month"].astype(int) * 100 + m["day"].astype(int))
             print("date range:", f"{md.min()//100:02d}-{md.min()%100:02d}",
                   "->", f"{md.max()//100:02d}-{md.max()%100:02d}")
+
+
+def recent_profile(days=60, level_hPa=10, lat=None, lat_range=None, var="u",
+                   years=None, end=None):
+    """The most recent daily zonal-mean profiles, for the time-height plots.
+
+    Returns (dates, values) where values is (n_days, n_levels) - the zonal
+    mean at each of the 37 levels. The dates are the ERA5 12Z days.
+    """
+    m = manifest(var)
+    if not len(m):
+        raise RuntimeError(f"ERA5 cache[{var}] empty")
+    latv = _load_lat()
+    # the most recent days, newest last
+    m = m.sort_values(["year", "month", "day"]).reset_index(drop=True)
+    if end is None:
+        m = m.tail(days)
+    else:
+        keep = (m["year"] * 10000 + m["month"] * 100 + m["day"]) <= end
+        m = m[keep].tail(days)
+    if not len(m):
+        raise RuntimeError("no cached days for the time series")
+    arr = np.load(prof_path(var), mmap_mode="r")
+    rows = m.index.to_numpy()
+    block = np.asarray(arr[rows, :, :], dtype=np.float64)      # (n, 37, 721)
+    if lat_range is not None:
+        lo, hi = float(lat_range[0]), float(lat_range[1])
+        sel = (latv >= lo) & (latv <= hi)
+        w = np.cos(np.deg2rad(latv[sel]))
+        vals = (block[:, :, sel] * w).sum(axis=2) / w.sum()
+    elif lat is None:
+        sel = latv >= 0
+        w = np.cos(np.deg2rad(latv[sel]))
+        vals = (block[:, :, sel] * w).sum(axis=2) / w.sum()
+    else:
+        j = int(np.abs(latv - float(lat)).argmin())
+        vals = block[:, :, j]
+    dates = pd.to_datetime(m["year"].astype(str) + "-" +
+                           m["month"].astype(str).str.zfill(2) + "-" +
+                           m["day"].astype(str).str.zfill(2))
+    return dates, vals
