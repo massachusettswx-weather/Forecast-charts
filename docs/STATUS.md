@@ -196,6 +196,28 @@ next deploy - it is fixed too.
 Verified against the known anchors: 60N/10 hPa = 21.6 m/s on 27 Oct and
 29.2 m/s on 15 Nov (the autumn build-up), against 12.8 m/s at 100 hPa.
 
+## 2026-08-29 04:45Z - the picker is back, with the checked views
+
+The domain/level picker is offered again, with three views, all at 10 hPa:
+`60N`, the `0-90N` mean and the `65-90N` polar cap. 70N and 1 hPa stay out
+of the menu and out of the Pages upload until they have been checked the
+same way. `site_meta.PUBLISHED_VIEWS` is the single source of truth - the
+menu, the upload list and the tab images all read it.
+
+Accuracy check (AIFS ENS F000 vs the ERA5 1991-2020 climatology for the
+same calendar days): 60N +22.1 vs +21.6..+23.3, polar cap +24.2 vs
++20.6..+20.9, NH +5.8 vs +5.4..+6.2 m/s. All three agree with the
+climatology.
+
+The polar cap is the striking one: every member reverses (50/50 AIFS and
+30/30 GEFS by 03 Nov) where 60N only gets 24/50 - the cap above 65N
+breaks down before 60N does.
+
+Also: `data/store/figures` is no longer tracked in the repo. `git add -A
+data/store` re-staged the figures every cycle because .gitignore does not
+apply to tracked files, and `git rm --cached` refused to remove them
+because they had just been re-rendered - it needed `-f`.
+
 ## Next things worth doing
 
 - Archive browser for older cycles.
