@@ -173,6 +173,29 @@ Lesson: reproduce the failure locally before pushing a fix - the runner's
 logs need auth and cannot be read from the sandbox, so the local store and a
 local pipeline run are the only diagnostic tools that work.
 
+## 2026-10-29 03:10Z - the ERA5 key format was wrong on both sides
+
+While publishing the ERA5 climatology as a small artifact, three
+key-format bugs surfaced - all in the same "MM-DD-12" convention:
+
+- `era5_cache.climatology()` built its keys as `M-D-HH` without zero
+  padding. They sorted as 10-1, 10-10, 10-2... and the charts, which look
+  up `MM-DD-12`, missed every day from the 1st to the 9th of a month.
+- the charts built the lookup key the same unpadded way, so the two sides
+  only matched by accident, and the new 30-day smoother - which sorts the
+  keys - was averaging over a scrambled calendar.
+- the artifact's dates came from a synthetic date range instead of the
+  climatology's own index, which drifted against it (a leap day, and the
+  fact that the index is the union of the calendar days over 30 years).
+
+All three are fixed: the keys are padded at the source, the lookups are
+padded, and the artifact's dates come from the index. The health check's
+level assertion had the same unpadded lookup and would have failed the
+next deploy - it is fixed too.
+
+Verified against the known anchors: 60N/10 hPa = 21.6 m/s on 27 Oct and
+29.2 m/s on 15 Nov (the autumn build-up), against 12.8 m/s at 100 hPa.
+
 ## Next things worth doing
 
 - Archive browser for older cycles.
