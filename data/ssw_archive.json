@@ -1261,6 +1261,1735 @@
     "min_level": 1
    }
   },
+  "70": {
+   "events": [
+    {
+     "start": "1965-12-01",
+     "end": "1965-12-04",
+     "days": 4,
+     "min": -6.98488712310791,
+     "min_date": "1965-12-03",
+     "depth": 6.98488712310791,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 2
+    },
+    {
+     "start": "1965-12-15",
+     "end": "1965-12-23",
+     "days": 9,
+     "min": -26.229389190673828,
+     "min_date": "1965-12-20",
+     "depth": 26.229389190673828,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "1968-11-25",
+     "end": "1968-11-30",
+     "days": 6,
+     "min": -13.560957908630371,
+     "min_date": "1968-11-28",
+     "depth": 13.560957908630371,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "1978-12-06",
+     "end": "1978-12-09",
+     "days": 4,
+     "min": -9.071308135986328,
+     "min_date": "1978-12-08",
+     "depth": 9.071308135986328,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 20
+    },
+    {
+     "start": "1981-12-03",
+     "end": "1981-12-06",
+     "days": 4,
+     "min": -9.573844909667969,
+     "min_date": "1981-12-05",
+     "depth": 9.573844909667969,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 7
+    },
+    {
+     "start": "1987-12-06",
+     "end": "1987-12-20",
+     "days": 15,
+     "min": -34.32679748535156,
+     "min_date": "1987-12-11",
+     "depth": 34.32679748535156,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "1996-12-04",
+     "end": "1996-12-07",
+     "days": 4,
+     "min": -6.246956825256348,
+     "min_date": "1996-12-07",
+     "depth": 6.246956825256348,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "1998-12-15",
+     "end": "1998-12-20",
+     "days": 6,
+     "min": -26.646087646484375,
+     "min_date": "1998-12-16",
+     "depth": 26.646087646484375,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "2000-11-21",
+     "end": "2000-11-28",
+     "days": 8,
+     "min": -10.816749572753906,
+     "min_date": "2000-11-25",
+     "depth": 10.816749572753906,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "1991-02-02",
+     "end": "1991-02-06",
+     "days": 5,
+     "min": -16.84773826599121,
+     "min_date": "1991-02-04",
+     "depth": 16.84773826599121,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 20
+    },
+    {
+     "start": "1991-02-09",
+     "end": "1991-02-16",
+     "days": 8,
+     "min": -11.055700302124023,
+     "min_date": "1991-02-14",
+     "depth": 11.055700302124023,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "1991-04-08",
+     "end": "1991-04-30",
+     "days": 23,
+     "min": -16.14763641357422,
+     "min_date": "1991-04-13",
+     "depth": 16.14763641357422,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "1992-03-19",
+     "end": "1992-03-31",
+     "days": 13,
+     "min": -20.0859432220459,
+     "min_date": "1992-03-25",
+     "depth": 20.0859432220459,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "1992-04-11",
+     "end": "1992-04-30",
+     "days": 20,
+     "min": -10.809087753295898,
+     "min_date": "1992-04-18",
+     "depth": 10.809087753295898,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "1993-03-05",
+     "end": "1993-03-08",
+     "days": 4,
+     "min": -11.739191055297852,
+     "min_date": "1993-03-06",
+     "depth": 11.739191055297852,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 2
+    },
+    {
+     "start": "1993-04-09",
+     "end": "1993-04-30",
+     "days": 22,
+     "min": -10.014545440673828,
+     "min_date": "1993-04-15",
+     "depth": 10.014545440673828,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "1994-04-02",
+     "end": "1994-04-30",
+     "days": 29,
+     "min": -30.371278762817383,
+     "min_date": "1994-04-08",
+     "depth": 30.371278762817383,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "1995-02-03",
+     "end": "1995-02-07",
+     "days": 5,
+     "min": -11.782670021057129,
+     "min_date": "1995-02-06",
+     "depth": 11.782670021057129,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 5
+    },
+    {
+     "start": "1995-04-06",
+     "end": "1995-04-11",
+     "days": 6,
+     "min": -14.038451194763184,
+     "min_date": "1995-04-07",
+     "depth": 14.038451194763184,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "1995-04-18",
+     "end": "1995-04-30",
+     "days": 13,
+     "min": -11.846419334411621,
+     "min_date": "1995-04-30",
+     "depth": 11.846419334411621,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 7
+    },
+    {
+     "start": "1996-04-09",
+     "end": "1996-04-30",
+     "days": 22,
+     "min": -18.666698455810547,
+     "min_date": "1996-04-14",
+     "depth": 18.666698455810547,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "1997-05-01",
+     "end": "1997-05-31",
+     "days": 31,
+     "min": -19.390256881713867,
+     "min_date": "1997-05-09",
+     "depth": 19.390256881713867,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "1998-01-06",
+     "end": "1998-01-10",
+     "days": 5,
+     "min": -6.237376689910889,
+     "min_date": "1998-01-08",
+     "depth": 6.237376689910889,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 2
+    },
+    {
+     "start": "1998-03-24",
+     "end": "1998-03-31",
+     "days": 8,
+     "min": -19.42526626586914,
+     "min_date": "1998-03-28",
+     "depth": 19.42526626586914,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 5
+    },
+    {
+     "start": "1998-04-01",
+     "end": "1998-04-30",
+     "days": 30,
+     "min": -15.470741271972656,
+     "min_date": "1998-04-09",
+     "depth": 15.470741271972656,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "1999-02-25",
+     "end": "1999-02-28",
+     "days": 4,
+     "min": -22.296770095825195,
+     "min_date": "1999-02-28",
+     "depth": 22.296770095825195,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 2
+    },
+    {
+     "start": "1999-03-01",
+     "end": "1999-03-23",
+     "days": 23,
+     "min": -22.74921989440918,
+     "min_date": "1999-03-01",
+     "depth": 22.74921989440918,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "1999-05-01",
+     "end": "1999-05-31",
+     "days": 31,
+     "min": -8.828621864318848,
+     "min_date": "1999-05-15",
+     "depth": 8.828621864318848,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2000-04-08",
+     "end": "2000-04-30",
+     "days": 23,
+     "min": -11.644339561462402,
+     "min_date": "2000-04-13",
+     "depth": 11.644339561462402,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 7
+    },
+    {
+     "start": "2001-02-01",
+     "end": "2001-02-21",
+     "days": 21,
+     "min": -24.558042526245117,
+     "min_date": "2001-02-13",
+     "depth": 24.558042526245117,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 5
+    },
+    {
+     "start": "2002-01-01",
+     "end": "2002-01-04",
+     "days": 4,
+     "min": -7.223356246948242,
+     "min_date": "2002-01-01",
+     "depth": 7.223356246948242,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 2
+    },
+    {
+     "start": "2002-02-16",
+     "end": "2002-02-20",
+     "days": 5,
+     "min": -11.234833717346191,
+     "min_date": "2002-02-18",
+     "depth": 11.234833717346191,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2002-05-06",
+     "end": "2002-05-31",
+     "days": 26,
+     "min": -17.251079559326172,
+     "min_date": "2002-05-27",
+     "depth": 17.251079559326172,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2003-02-17",
+     "end": "2003-02-20",
+     "days": 4,
+     "min": -17.550182342529297,
+     "min_date": "2003-02-19",
+     "depth": 17.550182342529297,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2003-03-06",
+     "end": "2003-03-09",
+     "days": 4,
+     "min": -8.815719604492188,
+     "min_date": "2003-03-08",
+     "depth": 8.815719604492188,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "2003-04-15",
+     "end": "2003-04-30",
+     "days": 16,
+     "min": -23.112611770629883,
+     "min_date": "2003-04-19",
+     "depth": 23.112611770629883,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "2004-01-02",
+     "end": "2004-01-19",
+     "days": 18,
+     "min": -16.563894271850586,
+     "min_date": "2004-01-05",
+     "depth": 16.563894271850586,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2004-01-25",
+     "end": "2004-01-31",
+     "days": 7,
+     "min": -10.778111457824707,
+     "min_date": "2004-01-28",
+     "depth": 10.778111457824707,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 20
+    },
+    {
+     "start": "2004-02-01",
+     "end": "2004-02-08",
+     "days": 8,
+     "min": -6.542800426483154,
+     "min_date": "2004-02-02",
+     "depth": 6.542800426483154,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 20
+    },
+    {
+     "start": "2004-05-01",
+     "end": "2004-05-31",
+     "days": 31,
+     "min": -19.081642150878906,
+     "min_date": "2004-05-04",
+     "depth": 19.081642150878906,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2005-03-12",
+     "end": "2005-03-31",
+     "days": 20,
+     "min": -24.695140838623047,
+     "min_date": "2005-03-18",
+     "depth": 24.695140838623047,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "2006-01-13",
+     "end": "2006-01-18",
+     "days": 6,
+     "min": -7.797870635986328,
+     "min_date": "2006-01-16",
+     "depth": 7.797870635986328,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2006-01-21",
+     "end": "2006-01-31",
+     "days": 11,
+     "min": -37.801124572753906,
+     "min_date": "2006-01-24",
+     "depth": 37.801124572753906,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2006-05-10",
+     "end": "2006-05-31",
+     "days": 22,
+     "min": -10.479259490966797,
+     "min_date": "2006-05-21",
+     "depth": 10.479259490966797,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2007-02-22",
+     "end": "2007-02-28",
+     "days": 7,
+     "min": -30.183645248413086,
+     "min_date": "2007-02-25",
+     "depth": 30.183645248413086,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 5
+    },
+    {
+     "start": "2007-04-17",
+     "end": "2007-04-30",
+     "days": 14,
+     "min": -16.8292236328125,
+     "min_date": "2007-04-29",
+     "depth": 16.8292236328125,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "2008-02-22",
+     "end": "2008-02-28",
+     "days": 7,
+     "min": -23.236419677734375,
+     "min_date": "2008-02-25",
+     "depth": 23.236419677734375,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "2008-03-11",
+     "end": "2008-03-17",
+     "days": 7,
+     "min": -12.394039154052734,
+     "min_date": "2008-03-15",
+     "depth": 12.394039154052734,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 7
+    },
+    {
+     "start": "2008-05-01",
+     "end": "2008-05-31",
+     "days": 31,
+     "min": -9.165946006774902,
+     "min_date": "2008-05-30",
+     "depth": 9.165946006774902,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2009-01-23",
+     "end": "2009-01-31",
+     "days": 9,
+     "min": -26.19028663635254,
+     "min_date": "2009-01-27",
+     "depth": 26.19028663635254,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2009-02-01",
+     "end": "2009-02-25",
+     "days": 25,
+     "min": -23.77726173400879,
+     "min_date": "2009-02-01",
+     "depth": 23.77726173400879,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "2009-05-07",
+     "end": "2009-05-31",
+     "days": 25,
+     "min": -12.55595588684082,
+     "min_date": "2009-05-16",
+     "depth": 12.55595588684082,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2010-01-24",
+     "end": "2010-01-31",
+     "days": 8,
+     "min": -12.964265823364258,
+     "min_date": "2010-01-29",
+     "depth": 12.964265823364258,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2010-02-06",
+     "end": "2010-02-26",
+     "days": 21,
+     "min": -24.78822135925293,
+     "min_date": "2010-02-09",
+     "depth": 24.78822135925293,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 20
+    },
+    {
+     "start": "2010-03-21",
+     "end": "2010-03-31",
+     "days": 11,
+     "min": -12.735755920410156,
+     "min_date": "2010-03-23",
+     "depth": 12.735755920410156,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 7
+    },
+    {
+     "start": "2011-04-06",
+     "end": "2011-04-30",
+     "days": 25,
+     "min": -31.890918731689453,
+     "min_date": "2011-04-11",
+     "depth": 31.890918731689453,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 2
+    },
+    {
+     "start": "2012-04-18",
+     "end": "2012-04-30",
+     "days": 13,
+     "min": -6.21295166015625,
+     "min_date": "2012-04-26",
+     "depth": 6.21295166015625,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 7
+    },
+    {
+     "start": "2013-01-07",
+     "end": "2013-01-30",
+     "days": 24,
+     "min": -25.55998992919922,
+     "min_date": "2013-01-08",
+     "depth": 25.55998992919922,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2013-05-05",
+     "end": "2013-05-31",
+     "days": 27,
+     "min": -14.621915817260742,
+     "min_date": "2013-05-19",
+     "depth": 14.621915817260742,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2014-03-16",
+     "end": "2014-03-19",
+     "days": 4,
+     "min": -6.1409478187561035,
+     "min_date": "2014-03-17",
+     "depth": 6.1409478187561035,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 2
+    },
+    {
+     "start": "2014-03-28",
+     "end": "2014-03-31",
+     "days": 4,
+     "min": -20.813526153564453,
+     "min_date": "2014-03-31",
+     "depth": 20.813526153564453,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 5
+    },
+    {
+     "start": "2014-04-01",
+     "end": "2014-04-06",
+     "days": 6,
+     "min": -21.854564666748047,
+     "min_date": "2014-04-01",
+     "depth": 21.854564666748047,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "2014-04-11",
+     "end": "2014-04-30",
+     "days": 20,
+     "min": -11.225868225097656,
+     "min_date": "2014-04-27",
+     "depth": 11.225868225097656,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "2015-04-03",
+     "end": "2015-04-30",
+     "days": 28,
+     "min": -22.966005325317383,
+     "min_date": "2015-04-18",
+     "depth": 22.966005325317383,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "2016-03-06",
+     "end": "2016-03-31",
+     "days": 26,
+     "min": -36.160160064697266,
+     "min_date": "2016-03-08",
+     "depth": 36.160160064697266,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2016-04-08",
+     "end": "2016-04-30",
+     "days": 23,
+     "min": -7.551171779632568,
+     "min_date": "2016-04-13",
+     "depth": 7.551171779632568,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 10
+    },
+    {
+     "start": "2017-02-24",
+     "end": "2017-02-28",
+     "days": 5,
+     "min": -7.937408924102783,
+     "min_date": "2017-02-27",
+     "depth": 7.937408924102783,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    },
+    {
+     "start": "2017-04-06",
+     "end": "2017-04-30",
+     "days": 25,
+     "min": -15.527064323425293,
+     "min_date": "2017-04-11",
+     "depth": 15.527064323425293,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "2018-02-11",
+     "end": "2018-02-23",
+     "days": 13,
+     "min": -39.29410934448242,
+     "min_date": "2018-02-15",
+     "depth": 39.29410934448242,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 2
+    },
+    {
+     "start": "2018-03-14",
+     "end": "2018-03-27",
+     "days": 14,
+     "min": -11.175264358520508,
+     "min_date": "2018-03-19",
+     "depth": 11.175264358520508,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 7
+    },
+    {
+     "start": "2019-01-01",
+     "end": "2019-01-25",
+     "days": 25,
+     "min": -19.852153778076172,
+     "min_date": "2019-01-10",
+     "depth": 19.852153778076172,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 3
+    },
+    {
+     "start": "2019-04-20",
+     "end": "2019-04-30",
+     "days": 11,
+     "min": -20.504732131958008,
+     "min_date": "2019-04-30",
+     "depth": 20.504732131958008,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 7
+    },
+    {
+     "start": "2020-05-01",
+     "end": "2020-05-31",
+     "days": 31,
+     "min": -11.447070121765137,
+     "min_date": "2020-05-31",
+     "depth": 11.447070121765137,
+     "was_westerly": true,
+     "reversal": true,
+     "min_level": 1
+    }
+   ],
+   "n_events": 73,
+   "n_winters": 34,
+   "winters_with_event": [
+    1965,
+    1968,
+    1978,
+    1981,
+    1987,
+    1992,
+    1993,
+    1994,
+    1995,
+    1996,
+    1997,
+    1998,
+    1999,
+    2000,
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020
+   ],
+   "by_winter": {
+    "1965": [
+     {
+      "start": "1965-12-01",
+      "end": "1965-12-04",
+      "days": 4,
+      "min": -6.98488712310791,
+      "min_date": "1965-12-03",
+      "depth": 6.98488712310791,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 2
+     },
+     {
+      "start": "1965-12-15",
+      "end": "1965-12-23",
+      "days": 9,
+      "min": -26.229389190673828,
+      "min_date": "1965-12-20",
+      "depth": 26.229389190673828,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     }
+    ],
+    "1968": [
+     {
+      "start": "1968-11-25",
+      "end": "1968-11-30",
+      "days": 6,
+      "min": -13.560957908630371,
+      "min_date": "1968-11-28",
+      "depth": 13.560957908630371,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "1978": [
+     {
+      "start": "1978-12-06",
+      "end": "1978-12-09",
+      "days": 4,
+      "min": -9.071308135986328,
+      "min_date": "1978-12-08",
+      "depth": 9.071308135986328,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 20
+     }
+    ],
+    "1981": [
+     {
+      "start": "1981-12-03",
+      "end": "1981-12-06",
+      "days": 4,
+      "min": -9.573844909667969,
+      "min_date": "1981-12-05",
+      "depth": 9.573844909667969,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 7
+     }
+    ],
+    "1987": [
+     {
+      "start": "1987-12-06",
+      "end": "1987-12-20",
+      "days": 15,
+      "min": -34.32679748535156,
+      "min_date": "1987-12-11",
+      "depth": 34.32679748535156,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "1992": [
+     {
+      "start": "1991-02-02",
+      "end": "1991-02-06",
+      "days": 5,
+      "min": -16.84773826599121,
+      "min_date": "1991-02-04",
+      "depth": 16.84773826599121,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 20
+     },
+     {
+      "start": "1991-02-09",
+      "end": "1991-02-16",
+      "days": 8,
+      "min": -11.055700302124023,
+      "min_date": "1991-02-14",
+      "depth": 11.055700302124023,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     },
+     {
+      "start": "1991-04-08",
+      "end": "1991-04-30",
+      "days": 23,
+      "min": -16.14763641357422,
+      "min_date": "1991-04-13",
+      "depth": 16.14763641357422,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "1993": [
+     {
+      "start": "1992-03-19",
+      "end": "1992-03-31",
+      "days": 13,
+      "min": -20.0859432220459,
+      "min_date": "1992-03-25",
+      "depth": 20.0859432220459,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     },
+     {
+      "start": "1992-04-11",
+      "end": "1992-04-30",
+      "days": 20,
+      "min": -10.809087753295898,
+      "min_date": "1992-04-18",
+      "depth": 10.809087753295898,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     }
+    ],
+    "1994": [
+     {
+      "start": "1993-03-05",
+      "end": "1993-03-08",
+      "days": 4,
+      "min": -11.739191055297852,
+      "min_date": "1993-03-06",
+      "depth": 11.739191055297852,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 2
+     },
+     {
+      "start": "1993-04-09",
+      "end": "1993-04-30",
+      "days": 22,
+      "min": -10.014545440673828,
+      "min_date": "1993-04-15",
+      "depth": 10.014545440673828,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     }
+    ],
+    "1995": [
+     {
+      "start": "1994-04-02",
+      "end": "1994-04-30",
+      "days": 29,
+      "min": -30.371278762817383,
+      "min_date": "1994-04-08",
+      "depth": 30.371278762817383,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     }
+    ],
+    "1996": [
+     {
+      "start": "1996-12-04",
+      "end": "1996-12-07",
+      "days": 4,
+      "min": -6.246956825256348,
+      "min_date": "1996-12-07",
+      "depth": 6.246956825256348,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     },
+     {
+      "start": "1995-02-03",
+      "end": "1995-02-07",
+      "days": 5,
+      "min": -11.782670021057129,
+      "min_date": "1995-02-06",
+      "depth": 11.782670021057129,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 5
+     },
+     {
+      "start": "1995-04-06",
+      "end": "1995-04-11",
+      "days": 6,
+      "min": -14.038451194763184,
+      "min_date": "1995-04-07",
+      "depth": 14.038451194763184,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     },
+     {
+      "start": "1995-04-18",
+      "end": "1995-04-30",
+      "days": 13,
+      "min": -11.846419334411621,
+      "min_date": "1995-04-30",
+      "depth": 11.846419334411621,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 7
+     }
+    ],
+    "1997": [
+     {
+      "start": "1996-04-09",
+      "end": "1996-04-30",
+      "days": 22,
+      "min": -18.666698455810547,
+      "min_date": "1996-04-14",
+      "depth": 18.666698455810547,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     },
+     {
+      "start": "1997-05-01",
+      "end": "1997-05-31",
+      "days": 31,
+      "min": -19.390256881713867,
+      "min_date": "1997-05-09",
+      "depth": 19.390256881713867,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "1998": [
+     {
+      "start": "1998-12-15",
+      "end": "1998-12-20",
+      "days": 6,
+      "min": -26.646087646484375,
+      "min_date": "1998-12-16",
+      "depth": 26.646087646484375,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     }
+    ],
+    "1999": [
+     {
+      "start": "1998-01-06",
+      "end": "1998-01-10",
+      "days": 5,
+      "min": -6.237376689910889,
+      "min_date": "1998-01-08",
+      "depth": 6.237376689910889,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 2
+     },
+     {
+      "start": "1998-03-24",
+      "end": "1998-03-31",
+      "days": 8,
+      "min": -19.42526626586914,
+      "min_date": "1998-03-28",
+      "depth": 19.42526626586914,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 5
+     },
+     {
+      "start": "1998-04-01",
+      "end": "1998-04-30",
+      "days": 30,
+      "min": -15.470741271972656,
+      "min_date": "1998-04-09",
+      "depth": 15.470741271972656,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     },
+     {
+      "start": "1999-05-01",
+      "end": "1999-05-31",
+      "days": 31,
+      "min": -8.828621864318848,
+      "min_date": "1999-05-15",
+      "depth": 8.828621864318848,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2000": [
+     {
+      "start": "2000-11-21",
+      "end": "2000-11-28",
+      "days": 8,
+      "min": -10.816749572753906,
+      "min_date": "2000-11-25",
+      "depth": 10.816749572753906,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     },
+     {
+      "start": "1999-02-25",
+      "end": "1999-02-28",
+      "days": 4,
+      "min": -22.296770095825195,
+      "min_date": "1999-02-28",
+      "depth": 22.296770095825195,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 2
+     },
+     {
+      "start": "1999-03-01",
+      "end": "1999-03-23",
+      "days": 23,
+      "min": -22.74921989440918,
+      "min_date": "1999-03-01",
+      "depth": 22.74921989440918,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2001": [
+     {
+      "start": "2000-04-08",
+      "end": "2000-04-30",
+      "days": 23,
+      "min": -11.644339561462402,
+      "min_date": "2000-04-13",
+      "depth": 11.644339561462402,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 7
+     }
+    ],
+    "2002": [
+     {
+      "start": "2001-02-01",
+      "end": "2001-02-21",
+      "days": 21,
+      "min": -24.558042526245117,
+      "min_date": "2001-02-13",
+      "depth": 24.558042526245117,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 5
+     },
+     {
+      "start": "2002-05-06",
+      "end": "2002-05-31",
+      "days": 26,
+      "min": -17.251079559326172,
+      "min_date": "2002-05-27",
+      "depth": 17.251079559326172,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2003": [
+     {
+      "start": "2002-01-01",
+      "end": "2002-01-04",
+      "days": 4,
+      "min": -7.223356246948242,
+      "min_date": "2002-01-01",
+      "depth": 7.223356246948242,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 2
+     },
+     {
+      "start": "2002-02-16",
+      "end": "2002-02-20",
+      "days": 5,
+      "min": -11.234833717346191,
+      "min_date": "2002-02-18",
+      "depth": 11.234833717346191,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2004": [
+     {
+      "start": "2003-02-17",
+      "end": "2003-02-20",
+      "days": 4,
+      "min": -17.550182342529297,
+      "min_date": "2003-02-19",
+      "depth": 17.550182342529297,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     },
+     {
+      "start": "2003-03-06",
+      "end": "2003-03-09",
+      "days": 4,
+      "min": -8.815719604492188,
+      "min_date": "2003-03-08",
+      "depth": 8.815719604492188,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     },
+     {
+      "start": "2003-04-15",
+      "end": "2003-04-30",
+      "days": 16,
+      "min": -23.112611770629883,
+      "min_date": "2003-04-19",
+      "depth": 23.112611770629883,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     },
+     {
+      "start": "2004-05-01",
+      "end": "2004-05-31",
+      "days": 31,
+      "min": -19.081642150878906,
+      "min_date": "2004-05-04",
+      "depth": 19.081642150878906,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2005": [
+     {
+      "start": "2004-01-02",
+      "end": "2004-01-19",
+      "days": 18,
+      "min": -16.563894271850586,
+      "min_date": "2004-01-05",
+      "depth": 16.563894271850586,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     },
+     {
+      "start": "2004-01-25",
+      "end": "2004-01-31",
+      "days": 7,
+      "min": -10.778111457824707,
+      "min_date": "2004-01-28",
+      "depth": 10.778111457824707,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 20
+     },
+     {
+      "start": "2004-02-01",
+      "end": "2004-02-08",
+      "days": 8,
+      "min": -6.542800426483154,
+      "min_date": "2004-02-02",
+      "depth": 6.542800426483154,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 20
+     }
+    ],
+    "2006": [
+     {
+      "start": "2005-03-12",
+      "end": "2005-03-31",
+      "days": 20,
+      "min": -24.695140838623047,
+      "min_date": "2005-03-18",
+      "depth": 24.695140838623047,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     },
+     {
+      "start": "2006-05-10",
+      "end": "2006-05-31",
+      "days": 22,
+      "min": -10.479259490966797,
+      "min_date": "2006-05-21",
+      "depth": 10.479259490966797,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2007": [
+     {
+      "start": "2006-01-13",
+      "end": "2006-01-18",
+      "days": 6,
+      "min": -7.797870635986328,
+      "min_date": "2006-01-16",
+      "depth": 7.797870635986328,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     },
+     {
+      "start": "2006-01-21",
+      "end": "2006-01-31",
+      "days": 11,
+      "min": -37.801124572753906,
+      "min_date": "2006-01-24",
+      "depth": 37.801124572753906,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2008": [
+     {
+      "start": "2007-02-22",
+      "end": "2007-02-28",
+      "days": 7,
+      "min": -30.183645248413086,
+      "min_date": "2007-02-25",
+      "depth": 30.183645248413086,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 5
+     },
+     {
+      "start": "2007-04-17",
+      "end": "2007-04-30",
+      "days": 14,
+      "min": -16.8292236328125,
+      "min_date": "2007-04-29",
+      "depth": 16.8292236328125,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     },
+     {
+      "start": "2008-05-01",
+      "end": "2008-05-31",
+      "days": 31,
+      "min": -9.165946006774902,
+      "min_date": "2008-05-30",
+      "depth": 9.165946006774902,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2009": [
+     {
+      "start": "2008-02-22",
+      "end": "2008-02-28",
+      "days": 7,
+      "min": -23.236419677734375,
+      "min_date": "2008-02-25",
+      "depth": 23.236419677734375,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     },
+     {
+      "start": "2008-03-11",
+      "end": "2008-03-17",
+      "days": 7,
+      "min": -12.394039154052734,
+      "min_date": "2008-03-15",
+      "depth": 12.394039154052734,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 7
+     },
+     {
+      "start": "2009-05-07",
+      "end": "2009-05-31",
+      "days": 25,
+      "min": -12.55595588684082,
+      "min_date": "2009-05-16",
+      "depth": 12.55595588684082,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2010": [
+     {
+      "start": "2009-01-23",
+      "end": "2009-01-31",
+      "days": 9,
+      "min": -26.19028663635254,
+      "min_date": "2009-01-27",
+      "depth": 26.19028663635254,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     },
+     {
+      "start": "2009-02-01",
+      "end": "2009-02-25",
+      "days": 25,
+      "min": -23.77726173400879,
+      "min_date": "2009-02-01",
+      "depth": 23.77726173400879,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     }
+    ],
+    "2011": [
+     {
+      "start": "2010-01-24",
+      "end": "2010-01-31",
+      "days": 8,
+      "min": -12.964265823364258,
+      "min_date": "2010-01-29",
+      "depth": 12.964265823364258,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     },
+     {
+      "start": "2010-02-06",
+      "end": "2010-02-26",
+      "days": 21,
+      "min": -24.78822135925293,
+      "min_date": "2010-02-09",
+      "depth": 24.78822135925293,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 20
+     },
+     {
+      "start": "2010-03-21",
+      "end": "2010-03-31",
+      "days": 11,
+      "min": -12.735755920410156,
+      "min_date": "2010-03-23",
+      "depth": 12.735755920410156,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 7
+     }
+    ],
+    "2012": [
+     {
+      "start": "2011-04-06",
+      "end": "2011-04-30",
+      "days": 25,
+      "min": -31.890918731689453,
+      "min_date": "2011-04-11",
+      "depth": 31.890918731689453,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 2
+     }
+    ],
+    "2013": [
+     {
+      "start": "2012-04-18",
+      "end": "2012-04-30",
+      "days": 13,
+      "min": -6.21295166015625,
+      "min_date": "2012-04-26",
+      "depth": 6.21295166015625,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 7
+     },
+     {
+      "start": "2013-05-05",
+      "end": "2013-05-31",
+      "days": 27,
+      "min": -14.621915817260742,
+      "min_date": "2013-05-19",
+      "depth": 14.621915817260742,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2014": [
+     {
+      "start": "2013-01-07",
+      "end": "2013-01-30",
+      "days": 24,
+      "min": -25.55998992919922,
+      "min_date": "2013-01-08",
+      "depth": 25.55998992919922,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ],
+    "2015": [
+     {
+      "start": "2014-03-16",
+      "end": "2014-03-19",
+      "days": 4,
+      "min": -6.1409478187561035,
+      "min_date": "2014-03-17",
+      "depth": 6.1409478187561035,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 2
+     },
+     {
+      "start": "2014-03-28",
+      "end": "2014-03-31",
+      "days": 4,
+      "min": -20.813526153564453,
+      "min_date": "2014-03-31",
+      "depth": 20.813526153564453,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 5
+     },
+     {
+      "start": "2014-04-01",
+      "end": "2014-04-06",
+      "days": 6,
+      "min": -21.854564666748047,
+      "min_date": "2014-04-01",
+      "depth": 21.854564666748047,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     },
+     {
+      "start": "2014-04-11",
+      "end": "2014-04-30",
+      "days": 20,
+      "min": -11.225868225097656,
+      "min_date": "2014-04-27",
+      "depth": 11.225868225097656,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     }
+    ],
+    "2016": [
+     {
+      "start": "2015-04-03",
+      "end": "2015-04-30",
+      "days": 28,
+      "min": -22.966005325317383,
+      "min_date": "2015-04-18",
+      "depth": 22.966005325317383,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     }
+    ],
+    "2017": [
+     {
+      "start": "2016-03-06",
+      "end": "2016-03-31",
+      "days": 26,
+      "min": -36.160160064697266,
+      "min_date": "2016-03-08",
+      "depth": 36.160160064697266,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     },
+     {
+      "start": "2016-04-08",
+      "end": "2016-04-30",
+      "days": 23,
+      "min": -7.551171779632568,
+      "min_date": "2016-04-13",
+      "depth": 7.551171779632568,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 10
+     }
+    ],
+    "2018": [
+     {
+      "start": "2017-02-24",
+      "end": "2017-02-28",
+      "days": 5,
+      "min": -7.937408924102783,
+      "min_date": "2017-02-27",
+      "depth": 7.937408924102783,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     },
+     {
+      "start": "2017-04-06",
+      "end": "2017-04-30",
+      "days": 25,
+      "min": -15.527064323425293,
+      "min_date": "2017-04-11",
+      "depth": 15.527064323425293,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     }
+    ],
+    "2019": [
+     {
+      "start": "2018-02-11",
+      "end": "2018-02-23",
+      "days": 13,
+      "min": -39.29410934448242,
+      "min_date": "2018-02-15",
+      "depth": 39.29410934448242,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 2
+     },
+     {
+      "start": "2018-03-14",
+      "end": "2018-03-27",
+      "days": 14,
+      "min": -11.175264358520508,
+      "min_date": "2018-03-19",
+      "depth": 11.175264358520508,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 7
+     }
+    ],
+    "2020": [
+     {
+      "start": "2019-01-01",
+      "end": "2019-01-25",
+      "days": 25,
+      "min": -19.852153778076172,
+      "min_date": "2019-01-10",
+      "depth": 19.852153778076172,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 3
+     },
+     {
+      "start": "2019-04-20",
+      "end": "2019-04-30",
+      "days": 11,
+      "min": -20.504732131958008,
+      "min_date": "2019-04-30",
+      "depth": 20.504732131958008,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 7
+     },
+     {
+      "start": "2020-05-01",
+      "end": "2020-05-31",
+      "days": 31,
+      "min": -11.447070121765137,
+      "min_date": "2020-05-31",
+      "depth": 11.447070121765137,
+      "was_westerly": true,
+      "reversal": true,
+      "min_level": 1
+     }
+    ]
+   },
+   "strongest": {
+    "start": "2018-02-11",
+    "end": "2018-02-23",
+    "days": 13,
+    "min": -39.29410934448242,
+    "min_date": "2018-02-15",
+    "depth": 39.29410934448242,
+    "was_westerly": true,
+    "reversal": true,
+    "min_level": 2
+   }
+  },
   "cap": {
    "events": [
     {
