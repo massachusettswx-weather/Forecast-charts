@@ -279,3 +279,39 @@ temperature/geopotential panels are wanted later, the ERA5 u cache is not
 the place to get them - the model forecast overlay is.
 
 
+## 2026-10-30 00:45Z - the archive browser was drawing nothing
+
+The archive tab shipped yesterday, but the reversal markers on the
+interactive chart were never drawn: **zero** red pixels, on any domain,
+at any level. Three bugs stacked:
+
+1. the page passed only the six gallery events, not the 49 in the
+   catalogue, and they carried the key `date` while the drawing code
+   read `start` - so every one of them was skipped;
+2. the event gallery's time-height figures were drawn for the polar cap
+   while the catalogue and the captions said 60N - the two disagreed;
+3. the date lookup was a linear scan of 13902 entries per event.
+
+The events now travel inside each domain's payload
+(`build_archive_payload.py` adds them), so the markers follow the domain
+the reader picks: 49 at 60N, 84 over the polar cap, 29 for the NH mean.
+The gallery figures use the catalogue's domain. The date lookup is a Map.
+
+Verified in a real browser on the deployed site: the markers draw, the
+hover readout gives the date, the value and the anomaly in sigma, and the
+level selector works (checked at 1, 10 and 100 hPa). No console errors.
+
+**Lesson:** a canvas that paints *something* is not the same as a canvas
+that paints the *right* thing. The first check I wrote ("are there any
+non-white pixels?") passed on a blank canvas, because transparent pixels
+read as "not white". What found the bug was counting the specific red of
+the markers.
+
+**Still not built** (and it is not cheap):
+- the *forecast* time-height (the model u/z/T at all levels on top of the
+  ERA5): the GFS side is ~27 GB per cycle, and ERA5 z/T is 3.2 h each at
+  the measured 75 MB/s ceiling. `scripts/render_timeheight.py` draws it
+  but nothing calls it.
+- the archive's "recent" window is the **tail of the record** (Sep-Dec
+  2020), because the u cache stops there. ARCO's ERA5 stops at 2023-01
+  in any case, so the archive cannot reach the present season.
