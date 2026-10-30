@@ -38,7 +38,8 @@ TABS = [("physics", "Physics-based", "ECMWF IFS + EPS, NOAA GFS + GEFS"),
         ("ai", "AI", "ECMWF AIFS Single + AIFS ENS"),
         ("hybrid", "Hybrid (physics + AI)", "every model on one graph"),
         ("ensembles", "Ensembles (members)", "member spaghetti + mean/control"),
-        ("ssw", "SSW watch", "% of members easterly for 24 h or more - the reversal probability")]
+        ("ssw", "SSW watch", "% of members easterly for 24 h or more - the reversal probability"),
+        ("stratosphere", "Stratosphere", "the forecast through the stratosphere: the polar vortex in pressure x time, with the anomaly against the ERA5 climatology")]
 
 # The ERA5 archive does not change with the forecast cycle - it is the
 # 1959-2020 reanalysis record, drawn once and served by the app.
@@ -154,6 +155,7 @@ def index(request: Request):
         "sources": site_meta.SOURCES, "partial_badge": partial_badge,
         "archive": archive_tab(),
         "picker_enabled": site_meta.PICKER_ENABLED,
+        "tab_views_json": json.dumps(site_meta.TAB_VIEW),
     })
 
 

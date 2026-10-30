@@ -25,7 +25,8 @@ TABS = [("physics", "Physics-based", "ECMWF IFS + EPS, NOAA GFS + GEFS"),
         ("ai", "AI", "ECMWF AIFS Single + AIFS ENS"),
         ("hybrid", "Hybrid (physics + AI)", "every model on one graph"),
         ("ensembles", "Ensembles (members)", "member spaghetti + mean/control"),
-        ("ssw", "SSW watch", "% of members easterly for 24 h or more - the reversal probability")]
+        ("ssw", "SSW watch", "% of members easterly for 24 h or more - the reversal probability"),
+        ("stratosphere", "Stratosphere", "the forecast through the stratosphere: the polar vortex in pressure x time, with the anomaly against the ERA5 climatology")]
 
 # The ERA5 archive does not change with the forecast cycle - it is the
 # 1959-2020 reanalysis record, drawn once and carried by the site.
@@ -103,7 +104,11 @@ def main():
                 if any(k in (cycles.get(c) or {}) for c in cycles)]
     # the site shows ONE view (the default domain and level): the other views
     # are still being checked, so they are not offered yet
-    def _default_view(c):
+    def _view_for(c, tab):
+        """The store view a tab's picture comes from."""
+        want = site_meta.TAB_VIEW.get(tab)
+        if want:
+            return (cycles.get(c, {}).get(want) or {})
         for l in lat_list:
             if l == site_meta.store_key(site_meta.DEFAULT_LAT,
                                         site_meta.DEFAULT_LEVEL):
@@ -113,7 +118,7 @@ def main():
     for key, title, blurb in TABS:
         img = None
         for c in cyc_list:
-            f = _default_view(c).get(key)
+            f = _view_for(c, key).get(key)
             if f:
                 img = "fig/" + f
                 break
@@ -132,6 +137,13 @@ def main():
     for c in cyc_list:
         for key in upload_keys:
             for f in (cycles.get(c, {}).get(key) or {}).values():
+                need.add(f)
+        # the tabs that are not on the default view (the stratosphere
+        # time-height is the polar cap) still have to be uploaded - only
+        # that tab's own figures, not the whole view
+        for tab, key in site_meta.TAB_VIEW.items():
+            f = (cycles.get(c, {}).get(key) or {}).get(tab)
+            if f and f.endswith(".png"):
                 need.add(f)
     names = []
     for name in sorted(need):
@@ -201,7 +213,8 @@ def main():
                       age_hours=age_h, valid_from=valid_from, valid_to=valid_to,
                       sources=site_meta.SOURCES, partial_badge=partial_badge,
                       archive=archive,
-                      picker_enabled=site_meta.PICKER_ENABLED)
+                      picker_enabled=site_meta.PICKER_ENABLED,
+                      tab_views_json=_json.dumps(site_meta.TAB_VIEW))
     with open(os.path.join(out, "index.html"), "w") as fh:
         fh.write(html)
     json.dump(latest, open(os.path.join(out, "latest.json"), "w"), indent=2)

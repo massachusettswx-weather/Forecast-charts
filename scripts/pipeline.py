@@ -302,6 +302,23 @@ def fetch_model(model, date, cyc, level, max_step=None):
     return out
 
 
+def fetch_timeheight(date, cyc, max_step=384):
+    """The GFS zonal-mean wind at every level - the model side of the
+    stratosphere time-height. Cheap: the .idx byte ranges mean only the
+    messages we want are downloaded (0.6 GB, ~95 s)."""
+    out = os.path.join(SELDIR, f"gfs_th_{date}{cyc}.npz")
+    if os.path.exists(out):
+        return out
+    rc, so, se = sh([PY, os.path.join(HERE, "fetch_gfs_timeheight.py"),
+                     "--date", date, "--cyc", cyc, "--maxstep", str(max_step),
+                     "--workers", "10", "--out", out])
+    if rc != 0 or not os.path.exists(out):
+        log(f"  time-height: FAILED rc={rc} {se.strip()[:160]}")
+        return None
+    log("  time-height: fetched")
+    return out
+
+
 def fetch_gefs_control(date, cyc, level):
     out = os.path.join(SELDIR, f"gefs_ctl_{date}{cyc}_u{level}.npz")
     if os.path.exists(out):
@@ -543,6 +560,26 @@ def render_all(cycle, level, lat=None, lats=None, levels=None):
         if got:
             outs.append(ssw_out)
             log(f"  rendered {os.path.basename(ssw_out)}")
+
+    # The stratosphere time-height: the GFS forecast at every level against
+    # the ERA5 1991-2020 climatology. It does not depend on the site's level
+    # (it spans all of them), so it is drawn once per cycle.
+    try:
+        import render_forecast_timeheight as RTH
+        th_npz = os.path.join(SELDIR, f"gfs_th_{cycle}.npz")
+        if os.path.exists(th_npz):
+            for dom in ("cap", "60", "0"):
+                th_out = os.path.join(
+                    FIGDIR, f"stratosphere_{cycle}_u10_{dom}.png")
+                RTH.render(th_out, th_npz, domain=dom, cycle=cycle)
+                outs.append(th_out)
+            log("  rendered the stratosphere time-height")
+        else:
+            log("  no time-height series for this cycle - skipping")
+    except Exception as exc:
+        import traceback
+        log(f"  time-height render FAILED: {exc}")
+        _render_errors.append("stratosphere:\n" + traceback.format_exc())
     return outs
 
 
@@ -636,6 +673,14 @@ def _sync(level, lat, only, members, force):
                     fetch_model(m, date, cyc, level)
             except Exception as e:
                 log(f"  {m} @{c}: FETCH ERROR {e!r} - continuing")
+        # the stratosphere time-height: the GFS zonal-mean wind at every
+        # level. It is a GFS product, so it comes with the GFS cycle.
+        if cyc_gfs == c:
+            try:
+                fetch_timeheight(date, cyc)
+            except Exception as e:
+                log(f"  time-height @{c}: FETCH ERROR {e!r} - continuing")
+
         # the extra stratospheric levels (the models that publish them)
         for lev, ms in LEVELS.items():
             if lev == level:
