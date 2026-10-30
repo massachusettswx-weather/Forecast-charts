@@ -571,7 +571,8 @@ def render_all(cycle, level, lat=None, lats=None, levels=None):
             for dom in ("cap", "60", "0"):
                 th_out = os.path.join(
                     FIGDIR, f"stratosphere_{cycle}_u10_{dom}.png")
-                RTH.render(th_out, th_npz, domain=dom, cycle=cycle)
+                RTH.render(th_out, th_npz, domain=dom,
+                           cycle=render.cycle_label(cycle))
                 outs.append(th_out)
             log("  rendered the stratosphere time-height")
         else:
