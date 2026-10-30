@@ -351,3 +351,51 @@ reverse it - which is why the tab shows the polar cap.
   change seems to have no effect.
 - `sharey=True` between a pressure axis and a height axis makes the two
   fight over the labels. Do not share.
+
+## 2026-10-30 06:05Z - the stratosphere is two products now, in a new colour scheme
+
+The combined wind+anomaly cross-section was doing two jobs badly: the
+brown/teal `BrBG` ramp was hard to read, and the wind field and the
+anomaly are different products that get consulted separately.
+
+**Two graphics, not one.** `scripts/render_forecast_timeheight.py` now
+renders two files per cycle and per domain:
+
+    stratosphere_<cycle>_u10_<domain>.png    the zonal-mean wind (m/s)
+    anomaly_<cycle>_u10_<domain>.png         the anomaly vs ERA5 (m/s)
+
+The second one is a **new tab** ("Stratosphere anomaly"), pinned to the
+polar cap like the first (`site_meta.TAB_VIEW`). The ERA5 archive events
+were split the same way: `event_<date>.png` and `eventanom_<date>.png`,
+and each gallery card carries both.
+
+**The colour scheme** is now the standard anomaly convention, in every
+stratosphere graphic: `RdBu_r` - **blue is negative** (easterly wind, or
+weaker than normal) and **red is positive** (westerly, or stronger). So
+the reversal reads as blue against the red vortex. The 0 m/s line is
+drawn as a **dashed** contour (the edge of the vortex), not a line on the
+pressure axis - and the ERA5 climatology stays black and solid.
+
+**The anomaly is in m/s, not sigma.** The normalised anomaly reached -9
+sigma on the 29 Oct run (a -41 m/s departure against a 4.6 m/s
+interannual spread), which is a number nobody can read. m/s is also what
+the wind product is in, so the two cross-sections can be read against
+each other.
+
+**Three bugs found on the way:**
+- the height axis on the right had **no numbers at all**: the level
+  filter was `ylo <= p <= yhi` with ylo=300 (hPa, the bottom) and
+  yhi=1 (the top), so it was always empty. The pressure axis was saved
+  by the default log locator, which is why only the height scale looked
+  broken.
+- `contourf(levels=18, norm=...)` **ignores the norm**: the levels come
+  from the data, so the colour bar showed the raw data range instead of
+  the symmetric one we asked for. The levels have to be given
+  explicitly (`np.linspace(vmin, vmax, 21)`).
+- the colour bar's tick labels collided with the height scale (they are
+  drawn to the right of the bar) - the gap between the two axes is now
+  0.058 of the figure width.
+
+**One matplotlib trap:** `linestyles=(0, (5, 2))` raises "Do not know how
+to convert [0] to dashes". Use the string `"dashed"`, or `linestyle="--"`
+for a legend handle.

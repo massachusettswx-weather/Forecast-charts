@@ -569,12 +569,17 @@ def render_all(cycle, level, lat=None, lats=None, levels=None):
         th_npz = os.path.join(SELDIR, f"gfs_th_{cycle}.npz")
         if os.path.exists(th_npz):
             for dom in ("cap", "60", "0"):
+                # two separate products: the wind and the anomaly
                 th_out = os.path.join(
                     FIGDIR, f"stratosphere_{cycle}_u10_{dom}.png")
-                RTH.render(th_out, th_npz, domain=dom,
-                           cycle=render.cycle_label(cycle))
+                RTH.render_wind(th_out, th_npz, domain=dom,
+                                cycle=render.cycle_label(cycle))
                 outs.append(th_out)
-            log("  rendered the stratosphere time-height")
+                an_out = os.path.join(FIGDIR, f"anomaly_{cycle}_u10_{dom}.png")
+                RTH.render_anom(an_out, th_npz, domain=dom,
+                                cycle=render.cycle_label(cycle))
+                outs.append(an_out)
+            log("  rendered the stratosphere time-height (wind + anomaly)")
         else:
             log("  no time-height series for this cycle - skipping")
     except Exception as exc:

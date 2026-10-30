@@ -30,6 +30,7 @@
   main { padding-top:14px; padding-bottom:30px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
   .card img { width:100%; height:auto; display:block; border-radius:4px; }
+  .card img + img { margin-top:10px; }
   /* the archive browser */
   .archbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:10px;
              font-size:13px; color:var(--mut); }
@@ -158,12 +159,15 @@
     <div class="grid">
       {% for e in archive.events %}
       <div class="card">
-        <img src="{{ e.img }}" alt="ERA5 time-height cross-section, {{ e.date }}">
-        <p style="margin:10px 0 0;font-size:13.5px;color:var(--mut)">
-          {% if e.min is defined %}<strong style="color:var(--ink)">{{ e.date }}</strong> —
-          {{ '%.1f'|format(e.min) }} m/s for {{ e.days }} days, deepest at
-          {{ e.level }} hPa{% else %}<strong style="color:var(--ink)">{{ e.date }}</strong>{% endif %}
+        <p style="margin:0 0 10px;font-size:13.5px">
+          <strong style="color:var(--ink)">{{ e.date }}</strong>
+          {% if e.min is defined %}— {{ '%.1f'|format(e.min) }} m/s for
+          {{ e.days }} days, deepest at {{ e.level }} hPa{% endif %}
         </p>
+        <img src="{{ e.img }}" alt="ERA5 zonal-mean wind through the stratosphere, {{ e.date }}">
+        {% if e.img_anom %}
+        <img src="{{ e.img_anom }}" alt="ERA5 zonal-wind anomaly through the stratosphere, {{ e.date }}">
+        {% endif %}
       </div>
       {% endfor %}
     </div>
@@ -175,6 +179,7 @@
   <div class="grid">
     <div class="card"><h3>Forecast models</h3><p>ECMWF open data (AIFS ENS 51 members, AIFS Single, IFS control, EPS 50 perturbed members) and NOAA open data (GFS deterministic, GEFS mean + control + 30 perturbed members). Raw GRIB2 is fetched straight from the archives; only the u&nbsp;@&nbsp;10&nbsp;hPa message is downloaded, using the published index files.</p></div>
     <div class="card"><h3>Climatology</h3><p>ERA5 1991–2020 reanalysis, zonal-mean u at daily 12&nbsp;Z for the whole year, with ±1σ and ±2σ across the 30 years, for 60˚N, the 0–90˚N mean and the 65–90˚N polar cap. The charts show a 30-day running mean of it, so the band is the spread of the season rather than of a single day.</p></div>
+    <div class="card"><h3>Stratosphere products</h3><p>The Stratosphere and Stratosphere anomaly tabs are two separate graphics: the zonal-mean wind through the pressure column, and the anomaly of the same column against the 1991–2020 climatology. Both are GFS forecasts for the polar cap (65–90˚N). Blue is easterly or weaker than normal, red is westerly or stronger, and the dashed line is 0&nbsp;m/s — the edge of the vortex.</p></div>
     <div class="card"><h3>How it updates</h3><p>The watcher polls every 15&nbsp;minutes and publishes a cycle as soon as every model for it has landed; a deadline sweep at 03, 09, 15 and 21&nbsp;UTC (9&nbsp;h after each initialisation) guarantees a rebuild even if a poll was delayed. It resolves the newest published cycle, fetches only what is missing, and re-renders these charts.</p></div>
     <div class="card"><h3>06z and 18z cycles</h3><p>ECMWF publishes the IFS control and the EPS only out to 144&nbsp;h in the 06z and 18z runs, so those two models are left off the charts for those cycles. AIFS, GFS and GEFS run the full 15–16&nbsp;days and are shown in full.</p></div>
   </div>

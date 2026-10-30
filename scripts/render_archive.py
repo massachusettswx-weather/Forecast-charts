@@ -25,12 +25,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
+from matplotlib.ticker import MaxNLocator
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 from render_timeheight import (LEVELS37, PLEV, HEIGHT_KM, DOM_LABEL,   # noqa: E402
-                               _levels_for, _clim_lookup, _panel, C_LINE)
+                               _levels_for, _clim_lookup, _panel, C_LINE,
+                               C_WIND, C_ANOM, frame, axes, titles, quantize)
 
 SERIES = os.path.join(ROOT, "data", "era5_series.npz")
 CLIM = os.path.join(ROOT, "data", "era5_clim_full.json")
@@ -130,11 +132,14 @@ def _catalogue(z, arch, dates, out_png, domain="60"):
     return out_png
 
 
-def _event_timeheight(z, clim, dates, event, out_png, domain="cap",
-                      pad=20):
-    """The time-height cross-section of one event."""
+def _event_data(z, clim, dates, event, domain="cap", pad=20):
+    """The time-height window of one event: the wind and the anomaly."""
     levs_all = list(z["levels"])
-    levs = _levels_for(clim.get("levels_hPa") or LEVELS37)
+    # the stratosphere, not the troposphere: the same range as the forecast
+    # product (300-1 hPa), and it keeps the tropospheric noise out of the
+    # 0 m/s line
+    levs = [l for l in _levels_for(clim.get("levels_hPa") or LEVELS37)
+            if l <= 300]
     series = z[f"u_{domain}"]
 
     i0 = dates.index(event["start"])
@@ -146,78 +151,79 @@ def _event_timeheight(z, clim, dates, event, out_png, domain="cap",
     vals = np.stack([series[idx[l]][a:b] for l in levs], axis=1)
 
     anom = np.full(vals.shape, np.nan)
-    norm_anom = np.full(vals.shape, np.nan)
     for j, lev in enumerate(levs):
         cl = _clim_lookup(clim, domain, lev)
         for i, t in enumerate(times):
             mm = cl.get(f"{t.month:02d}-{t.day:02d}")
-            if not mm:
-                continue
-            m, s = mm
-            anom[i, j] = vals[i, j] - m
-            if s and s == s and s > 0:
-                norm_anom[i, j] = (vals[i, j] - m) / s
+            if mm:
+                anom[i, j] = vals[i, j] - mm[0]
+    return times, levs, vals, anom
 
-    fig = plt.figure(figsize=(14.6, 7.4))
-    L, R, T, B = 0.072, 0.958, 0.845, 0.135
-    CB_W, CB_PAD, HW, GAP = 0.0115, 0.010, 0.030, 0.085
-    usable = R - L
-    pw = (usable - (2 * CB_W + 2 * CB_PAD + GAP + HW)) / 2.0
-    x1 = L
-    x2 = x1 + pw + CB_PAD + CB_W + GAP
-    ax1 = fig.add_axes([x1, B, pw, T - B])
-    ax2 = fig.add_axes([x2, B, pw, T - B])
-    axes = [ax1, ax2]
-    cax1 = fig.add_axes([x1 + pw + CB_PAD, B, CB_W, T - B])
-    cax2 = fig.add_axes([x2 + pw + CB_PAD, B, CB_W, T - B])
-    hax = fig.add_axes([x2 + pw + CB_PAD + CB_W + 0.012, B, HW, T - B],
-                       sharey=axes[0])
 
-    vmin = float(np.nanpercentile(vals, 2))
-    vmax = float(np.nanpercentile(vals, 98))
-    mesh = _panel(axes[0], times, levs, vals, "BrBG",
-                  TwoSlopeNorm(vmin=vmin, vcenter=0.0, vmax=vmax),
-                  "Zonal mean zonal wind (m/s)", contour=anom)
-    cb = fig.colorbar(mesh, cax=cax1)
-    cb.set_label("Zonal wind (m/s)", fontsize=9)
-    cb.ax.tick_params(labelsize=8)
+def _event_wind(z, clim, dates, event, out_png, domain="cap", pad=20):
+    """Product 1 of the event: the zonal-mean wind (m/s)."""
+    times, levs, vals, anom = _event_data(z, clim, dates, event, domain, pad)
+    ylo, yhi = float(max(levs)), float(min(levs))
 
-    mesh2 = _panel(axes[1], times, levs, norm_anom, "BrBG_r",
-                   TwoSlopeNorm(vmin=-4, vcenter=0, vmax=4),
-                   "Normalized zonal-wind anomaly (sigma)")
-    cb2 = fig.colorbar(mesh2, cax=cax2)
-    cb2.set_label("Normalized anomaly (sigma)", fontsize=9)
-    cb2.ax.tick_params(labelsize=8)
-
-    for ax in axes:
-        ax.set_xlim(times[0], times[-1])
-        ax.tick_params(axis="x", rotation=45, labelsize=8.5)
-    hax.set_yscale("log")
-    hax.set_ylim(1000, 1)
-    hax.set_yticks(PLEV)
-    hax.set_yticklabels([f"{HEIGHT_KM[p]:.0f}" for p in PLEV], fontsize=8)
-    hax.yaxis.tick_right()
-    hax.yaxis.set_label_position("right")
-    hax.set_ylabel("Height (km)", fontsize=9, color="#555555")
-    hax.tick_params(labelsize=8, colors="#555555")
-    hax.set_xticks([])
-    hax.tick_params(axis="x", length=0)
-    for s in ("left", "bottom"):
-        hax.spines[s].set_visible(False)
-    hax.spines["right"].set_color("#777777")
-
-    fig.suptitle(f"ERA5 — {event['start']} reversal, {DOM_LABEL.get(domain, domain)}",
-                 x=0.035, ha="left", fontsize=16.5, fontweight="bold", y=0.972)
-    fig.text(0.035, 0.918,
-             f"easterly {event['days']} days, deepest {event['min']:.1f} m/s "
-             f"on {event['min_date']}   •   anomaly against the 1991–2020 "
-             f"climatology",
-             ha="left", va="top", fontsize=10.5, color="#333333")
-    fig.text(0.985, 0.018, "@Massachusettswx", ha="right", va="bottom",
-             fontsize=12.5, fontweight="bold", color="#111111")
+    fig, ax, cax, hax = frame()
+    lo = float(np.nanpercentile(vals, 2))
+    hi = float(np.nanpercentile(vals, 98))
+    vmin = min(-8.0, lo)
+    vmax = max(12.0, hi)
+    mesh = ax.contourf(times, levs, vals.T, levels=21, cmap=C_WIND,
+                       norm=TwoSlopeNorm(vmin=vmin, vcenter=0.0, vmax=vmax),
+                       extend="both")
+    cs0 = ax.contour(times, levs, vals.T, levels=[0.0], colors=["#222222"],
+                     linewidths=1.8, alpha=0.9, zorder=9, linestyles="dashed")
+    ax.clabel(cs0, inline=True, fontsize=8.5, fmt="0 m/s")
+    axes(ax, hax, ylo, yhi, times)
+    ax.grid(True, color="#ffffff", lw=0.6, alpha=0.55)
+    cb = fig.colorbar(mesh, cax=cax)
+    cb.locator = MaxNLocator(nbins=8, integer=True)
+    cb.update_ticks()
+    cb.set_label("Zonal wind (m/s)", fontsize=9.5)
+    cb.ax.tick_params(labelsize=8.5)
+    dom = DOM_LABEL.get(domain, domain)
+    titles(fig, f"ERA5 — {event['start']} reversal, {dom}",
+           f"easterly {event['days']} days, deepest {event['min']:.1f} m/s "
+           f"on {event['min_date']}   •   blue is easterly, red is westerly")
     fig.savefig(out_png, dpi=200)
     plt.close(fig)
-    _quantize(out_png)
+    quantize(out_png)
+    return out_png
+
+
+def _event_anom(z, clim, dates, event, out_png, domain="cap", pad=20):
+    """Product 2 of the event: the anomaly against the 1991-2020 climatology."""
+    times, levs, vals, anom = _event_data(z, clim, dates, event, domain, pad)
+    ylo, yhi = float(max(levs)), float(min(levs))
+
+    fig, ax, cax, hax = frame()
+    lim = float(np.nanpercentile(np.abs(anom), 99))
+    lim = max(8.0, min(lim, 45.0))
+    step = 5.0 if lim <= 12 else (10.0 if lim <= 25 else 20.0)
+    k = int(lim // step)
+    mesh = ax.contourf(times, levs, anom.T, levels=21, cmap=C_ANOM,
+                       norm=TwoSlopeNorm(vmin=-lim, vcenter=0.0, vmax=lim),
+                       extend="both")
+    cs = ax.contour(times, levs, anom.T,
+                    levels=[i * step for i in range(-k, k + 1)
+                            if 0 < abs(i * step) < lim],
+                    colors=["#333333"], linewidths=0.9, alpha=0.75)
+    ax.clabel(cs, inline=True, fontsize=8, fmt="%d")
+    axes(ax, hax, ylo, yhi, times)
+    ax.grid(True, color="#ffffff", lw=0.6, alpha=0.45)
+    cb = fig.colorbar(mesh, cax=cax,
+                      ticks=np.arange(-(k - 1) * step, k * step, step))
+    cb.set_label("Anomaly (m/s)", fontsize=9.5)
+    cb.ax.tick_params(labelsize=8.5)
+    dom = DOM_LABEL.get(domain, domain)
+    titles(fig, f"ERA5 — {event['start']} reversal, {dom} anomaly",
+           f"against the 1991–2020 climatology   •   blue is weaker than "
+           f"normal, red is stronger")
+    fig.savefig(out_png, dpi=200)
+    plt.close(fig)
+    quantize(out_png)
     return out_png
 
 
@@ -239,10 +245,13 @@ def main():
     evs = sorted(arch["domains"][a.domain]["events"],
                  key=lambda e: e["depth"], reverse=True)[:a.events]
     for e in evs:
-        out = os.path.join(a.out_dir, f"event_{e['start']}.png")
         # the same domain as the catalogue, so the two agree
-        _event_timeheight(z, clim, dates, e, out, domain=a.domain)
+        out = os.path.join(a.out_dir, f"event_{e['start']}.png")
+        _event_wind(z, clim, dates, e, out, domain=a.domain)
+        out2 = os.path.join(a.out_dir, f"eventanom_{e['start']}.png")
+        _event_anom(z, clim, dates, e, out2, domain=a.domain)
         print("wrote", out, flush=True)
+        print("wrote", out2, flush=True)
 
 
 if __name__ == "__main__":

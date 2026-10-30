@@ -45,7 +45,7 @@ PUBLISHED_VIEWS = [("60", 10), ("0", 10), ("cap", 10)]
 # Which store view a tab's picture is taken from. Everything follows the
 # default view, except the stratosphere time-height: the SSW is a polar-cap
 # phenomenon, so that cross-section is always the polar cap.
-TAB_VIEW = {"stratosphere": "cap|10"}
+TAB_VIEW = {"stratosphere": "cap|10", "anomaly": "cap|10"}
 
 # The domain/level picker in the header. Off for now: the site shows the
 # default view only, and the ERA5 archive carries its own domain/level

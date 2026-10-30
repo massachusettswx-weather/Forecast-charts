@@ -35,7 +35,16 @@
     "ssw_2026102918_u10_cap.png": "/fig/ssw_2026102918_u10_cap.png",
     "stratosphere_2026102918_u10_cap.png": "/fig/stratosphere_2026102918_u10_cap.png",
     "stratosphere_2026102918_u10_60.png": "/fig/stratosphere_2026102918_u10_60.png",
-    "stratosphere_2026102918_u10_0.png": "/fig/stratosphere_2026102918_u10_0.png"
+    "stratosphere_2026102918_u10_0.png": "/fig/stratosphere_2026102918_u10_0.png",
+    "anomaly_2026102918_u10_cap.png": "/fig/anomaly_2026102918_u10_cap.png",
+    "anomaly_2026102918_u10_60.png": "/fig/anomaly_2026102918_u10_60.png",
+    "anomaly_2026102918_u10_0.png": "/fig/anomaly_2026102918_u10_0.png",
+    "stratosphere_2026102818_u10_cap.png": "/fig/",
+    "anomaly_2026102818_u10_cap.png": "/fig/",
+    "stratosphere_2026102818_u10_60.png": "/fig/",
+    "anomaly_2026102818_u10_60.png": "/fig/",
+    "stratosphere_2026102818_u10_0.png": "/fig/",
+    "anomaly_2026102818_u10_0.png": "/fig/"
   },
   "cycles": {
     "2026102918": {
@@ -45,7 +54,8 @@
         "hybrid": "hybrid_2026102918_u10_0.png",
         "physics": "physics_2026102918_u10_0.png",
         "ssw": "ssw_2026102918_u10_0.png",
-        "stratosphere": "stratosphere_2026102918_u10_0.png"
+        "stratosphere": "stratosphere_2026102918_u10_0.png",
+        "anomaly": "anomaly_2026102918_u10_0.png"
       },
       "60|10": {
         "ai": "ai_2026102918_u10_60.png",
@@ -53,7 +63,8 @@
         "hybrid": "hybrid_2026102918_u10_60.png",
         "physics": "physics_2026102918_u10_60.png",
         "ssw": "ssw_2026102918_u10_60.png",
-        "stratosphere": "stratosphere_2026102918_u10_60.png"
+        "stratosphere": "stratosphere_2026102918_u10_60.png",
+        "anomaly": "anomaly_2026102918_u10_60.png"
       },
       "70|10": {
         "ai": "ai_2026102918_u10_70.png",
@@ -68,7 +79,8 @@
         "hybrid": "hybrid_2026102918_u10_cap.png",
         "physics": "physics_2026102918_u10_cap.png",
         "ssw": "ssw_2026102918_u10_cap.png",
-        "stratosphere": "stratosphere_2026102918_u10_cap.png"
+        "stratosphere": "stratosphere_2026102918_u10_cap.png",
+        "anomaly": "anomaly_2026102918_u10_cap.png"
       },
       "0|1": {
         "hybrid": "hybrid_2026102918_u1_0.png",
@@ -85,6 +97,20 @@
       "cap|1": {
         "hybrid": "hybrid_2026102918_u1_cap.png",
         "physics": "physics_2026102918_u1_cap.png"
+      }
+    },
+    "2026102818": {
+      "cap|10": {
+        "stratosphere": "stratosphere_2026102818_u10_cap.png",
+        "anomaly": "anomaly_2026102818_u10_cap.png"
+      },
+      "60|10": {
+        "stratosphere": "stratosphere_2026102818_u10_60.png",
+        "anomaly": "anomaly_2026102818_u10_60.png"
+      },
+      "0|10": {
+        "stratosphere": "stratosphere_2026102818_u10_0.png",
+        "anomaly": "anomaly_2026102818_u10_0.png"
       }
     }
   },

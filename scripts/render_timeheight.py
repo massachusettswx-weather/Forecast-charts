@@ -35,13 +35,20 @@ LEVELS37 = [1, 2, 3, 5, 7, 10, 20, 30, 50, 70, 100, 125, 150, 175, 200, 225,
              825, 850, 875, 900, 925, 950, 975, 1000]
 # the pressure axis: a log scale, 1000 hPa at the bottom, 1 hPa at the top
 PLEV = [1000, 700, 500, 300, 200, 100, 70, 50, 30, 20, 10, 7, 5, 3, 2, 1]
-HEIGHT_KM = {1000: 0.0, 700: 3.0, 500: 5.5, 300: 9.0, 200: 12.0,
-             100: 16.0, 70: 18.5, 50: 20.5, 30: 24.0, 20: 26.0,
-             10: 31.0, 7: 34.0, 5: 36.0, 3: 39.5, 2: 43.0, 1: 48.0}
+HEIGHT_KM = {1000: 0.0, 700: 3.0, 500: 5.5, 300: 9.0, 250: 10.4,
+             200: 12.0, 150: 13.6, 100: 16.0, 70: 18.5, 50: 20.5,
+             30: 24.0, 20: 26.0, 10: 31.0, 7: 34.0, 5: 36.0, 3: 39.5,
+             2: 43.0, 1: 48.0}
 
 C_U = "#1f4fd8"          # the zonal-wind diverging map
 C_ANOM = "#b03030"       # the anomaly map
 C_LINE = "#7a4fd0"       # the purple anomaly contours
+
+# The colour scheme. Blue is westerly (or a positive anomaly), red is
+# easterly (or a negative anomaly) - so the reversal reads as red against
+# the blue vortex, in every stratosphere graphic.
+C_WIND = "RdBu_r"        # westerly blue -> easterly red
+C_ANOM = "RdBu_r"        # positive anomaly blue -> negative anomaly red
 DOM_LABEL = {"60": "60˚N", "70": "70˚N", "0": "NH (0-90N)",
              "cap": "Polar cap (65-90N)"}
 
@@ -80,14 +87,88 @@ def _clim_lookup(clim, domain, level):
     return out
 
 
+# --------------------------------------------------------------- the frame
+# One time-height panel: the pressure axis on the left, the colour bar and
+# the height scale on the right. The stratosphere products are SEPARATE
+# graphics - the wind and the anomaly are different products, not two
+# panels of one figure.
+
+def frame(figsize=(12.8, 7.4)):
+    """One panel, its own colour bar, and the height scale beside it."""
+    fig = plt.figure(figsize=figsize)
+    L, R, T, B = 0.082, 0.930, 0.845, 0.135
+    CB_W, CB_PAD, HW = 0.013, 0.013, 0.030
+    pw = R - L - CB_W - CB_PAD - HW - 0.058
+    ax = fig.add_axes([L, B, pw, T - B])
+    cax = fig.add_axes([L + pw + CB_PAD, B, CB_W, T - B])
+    hax = fig.add_axes([L + pw + CB_PAD + CB_W + 0.058, B, HW, T - B])
+    return fig, ax, cax, hax
+
+
+def axes(ax, hax, ylo, yhi, times, plev=None):
+    """The pressure axis (log) and the height scale beside it.
+
+    ylo is the BOTTOM of the plot (the largest pressure) and yhi the top.
+    """
+    plev = plev or [p for p in PLEV if yhi <= p <= ylo]
+    ax.set_yscale("log")
+    ax.set_ylim(ylo, yhi)
+    ax.set_yticks(plev)
+    ax.set_yticklabels([str(p) for p in plev], fontsize=9.5)
+    ax.set_ylabel("Pressure (hPa)", fontsize=10.5)
+    ax.set_xlim(times[0], times[-1])
+    ax.tick_params(axis="x", rotation=45, labelsize=9)
+    ax.tick_params(labelsize=9.5)
+
+    hp = [p for p in PLEV if yhi <= p <= ylo and p in HEIGHT_KM]
+    hax.set_yscale("log")
+    hax.set_ylim(ylo, yhi)
+    hax.set_yticks(hp)
+    hax.set_yticklabels([f"{HEIGHT_KM[p]:.0f}" for p in hp], fontsize=8.5)
+    hax.yaxis.tick_right()
+    hax.yaxis.set_label_position("right")
+    hax.set_ylabel("Height (km)", fontsize=9.5, color="#555555")
+    hax.tick_params(labelsize=8.5, colors="#555555")
+    hax.set_xticks([])
+    hax.tick_params(axis="x", length=0)
+    for sp in ("left", "bottom"):
+        hax.spines[sp].set_visible(False)
+    hax.spines["right"].set_color("#999999")
+
+
+def titles(fig, title, sub):
+    """The title block: a bold title, a descriptor line and the handle."""
+    fig.suptitle(title, x=0.032, ha="left", fontsize=17, fontweight="bold",
+                 y=0.972)
+    fig.text(0.032, 0.916, sub, ha="left", va="top", fontsize=10.5,
+             color="#333333")
+    fig.text(0.985, 0.018, "@Massachusettswx", ha="right", va="bottom",
+             fontsize=12.5, fontweight="bold", color="#111111")
+
+
+def quantize(path, colors=256):
+    """256 colours: a PNG of a filled contour is huge otherwise."""
+    try:
+        from PIL import Image
+        im = Image.open(path).convert("RGB")
+        im.quantize(colors=colors, method=Image.MEDIANCUT).save(path,
+                                                                 optimize=True)
+    except Exception:
+        pass
+
+
 def _panel(ax, times, levs, values, cmap, norm, title, contour=None,
-           cbar_label="", extend="both"):
+           cbar_label="", extend="both", levels=20):
     """One time-height panel.
 
     The field arrives as (time, level); contourf wants (level, time).
     """
-    mesh = ax.contourf(times, levs, values.T, levels=18, cmap=cmap, norm=norm,
-                       extend=extend)
+    if isinstance(levels, (int, float)):
+        levels = int(levels)
+        lo, hi = norm.vmin, norm.vmax
+        levels = np.linspace(lo, hi, levels)
+    mesh = ax.contourf(times, levs, values.T, levels=levels, cmap=cmap,
+                       norm=norm, extend=extend)
     if contour is not None:
         # contour() wants (levels, times) - the field is stored (time, level)
         cs = ax.contour(times, levs, contour.T,
@@ -168,7 +249,7 @@ def render_timeheight(out_png, cycle, domain="60", days=60, title=None,
     vmin = float(np.nanpercentile(vals, 2))
     vmax = float(np.nanpercentile(vals, 98))
     norm = TwoSlopeNorm(vmin=vmin, vcenter=0.0, vmax=vmax)
-    mesh = _panel(axes[0], times, levs, vals, "BrBG", norm,
+    mesh = _panel(axes[0], times, levs, vals, C_WIND, norm,
                   "Zonal mean zonal wind (m/s)", contour=anom,
                   cbar_label="Zonal wind (m/s)")
     cb = fig.colorbar(mesh, cax=cax1)
@@ -176,7 +257,7 @@ def render_timeheight(out_png, cycle, domain="60", days=60, title=None,
     cb.ax.tick_params(labelsize=8)
 
     # --- panel 2: the normalized anomaly
-    mesh2 = _panel(axes[1], times, levs, norm_anom, "BrBG_r",
+    mesh2 = _panel(axes[1], times, levs, norm_anom, C_ANOM,
                    TwoSlopeNorm(vmin=-4, vcenter=0, vmax=4),
                    "Normalized zonal-wind anomaly (sigma)")
     cb2 = fig.colorbar(mesh2, cax=cax2)
