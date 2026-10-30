@@ -315,3 +315,39 @@ the markers.
 - the archive's "recent" window is the **tail of the record** (Sep-Dec
   2020), because the u cache stops there. ARCO's ERA5 stops at 2023-01
   in any case, so the archive cannot reach the present season.
+
+## 2026-10-30 03:50Z - the forecast stratosphere time-height is live
+
+The last piece of the stratosphere work, and the one that looked the most
+expensive. It was not.
+
+**The cost.** The earlier estimate of ~27 GB per cycle was wrong. The
+NOAA `.idx` files give the byte range of every GRIB message, so only the
+messages we want are downloaded. Measured on the real thing: a 16-day,
+15-level time-height is **0.6 GB and 95 seconds** (`scripts/fetch_gfs_timeheight.py`).
+
+**What it shows.** The GFS zonal-mean wind at 15 levels across the
+forecast, against the ERA5 1991-2020 climatology for the same calendar
+days, as a pressure x time cross-section with the anomaly in purple
+contours. On the 29 Oct 18z run over the polar cap: the westerly vortex
+gives way to a deep easterly blob that starts at 1-3 hPa and descends to
+20-30 hPa by 6 Nov, with a -20 m/s anomaly. The textbook SSW signature,
+descending. At 60N the same run only weakens the vortex - it does not
+reverse it - which is why the tab shows the polar cap.
+
+**Three things that had to be fixed:**
+- the runner had no `data/era5_clim_full.json` (the full-resolution
+  climatology is a build-machine artifact). The slice the figure needs is
+  now committed: `data/era5_clim_th.json`, 15 levels x 4 domains, 969 KB.
+- the height scale on the right was a twin of the left panel, and
+  sharing the y made it overwrite the pressure labels. It is its own
+  axes now.
+- the title showed the raw cycle id; it uses the house-style label now.
+
+**Two traps worth remembering:**
+- a stale `__pycache__` .pyc shadowed an edit on the NAS volume - the
+  filesystem's timestamps fooled Python's cache check, and the new code
+  simply did not run. `find . -name __pycache__ -exec rm -rf {} +` when a
+  change seems to have no effect.
+- `sharey=True` between a pressure axis and a height axis makes the two
+  fight over the labels. Do not share.
