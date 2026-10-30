@@ -72,7 +72,9 @@ def _clim_lookup(clim, domain, level):
     out = {}
     for dd, m, s in zip(dates, mean, sd):
         try:
-            out[dd[5:]] = (m, s)          # 'MM-DD'
+            # the dates are either 'YYYY-MM-DD' or already 'MM-DD'
+            key = dd[5:] if len(dd) > 5 else dd
+            out[key] = (m, s)
         except Exception:
             continue
     return out

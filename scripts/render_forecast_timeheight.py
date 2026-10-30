@@ -65,8 +65,10 @@ def _clim_series(clim, domain, level, times):
 
 def render(out_png, npz_path, domain="60", cycle=None, clim_path=None,
            title=None, sub=None):
+    # the committed slice of the climatology (the levels this figure shows);
+    # the full-resolution one is a build-machine artifact
     clim = json.load(open(clim_path or os.path.join(ROOT, "data",
-                                                    "era5_clim_full.json")))
+                                                    "era5_clim_th.json")))
     z = np.load(npz_path)
     levels = [int(l) for l in z["levels"]]
     lat = z["lat"]
