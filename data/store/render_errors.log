@@ -1,9 +1,0 @@
-stratosphere:
-Traceback (most recent call last):
-  File "/home/runner/work/Forecast-charts/Forecast-charts/scripts/pipeline.py", line 574, in render_all
-    RTH.render(th_out, th_npz, domain=dom, cycle=cycle)
-  File "/home/runner/work/Forecast-charts/Forecast-charts/scripts/render_forecast_timeheight.py", line 68, in render
-    clim = json.load(open(clim_path or os.path.join(ROOT, "data",
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/work/Forecast-charts/Forecast-charts/data/era5_clim_full.json'
-
