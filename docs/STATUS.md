@@ -399,3 +399,52 @@ each other.
 **One matplotlib trap:** `linestyles=(0, (5, 2))` raises "Do not know how
 to convert [0] to dashes". Use the string `"dashed"`, or `linestyle="--"`
 for a legend handle.
+
+## 2026-10-30 06:25Z - the next request: zonal HEIGHT anomalies, 1990-2020 (paused)
+
+The archive tab is to lose **two things** - the "ERA5 stratosphere archive"
+catalogue figure and the "Browse the record" interactive canvas - and become
+instead:
+
+> a time series of **zonal geopotential-height anomalies**, **1-1000 mb**,
+> **60-90N**, **ERA5**, **1990-2020, all year**.
+
+Height, not wind: a polar vortex is a deep cold column, and the classic
+measure of a sudden stratospheric warming is the height ANOMALY at 10 hPa
+over the polar cap (the lower the height, the warmer and weaker the vortex).
+The natural figure is the height-anomaly time-height cross-section (x = time
+1990-2020, y = pressure 1-1000 hPa, colour = the anomaly against the
+1991-2020 climatology for the same calendar day).
+
+**The blocker is the data: ERA5 `geopotential` is not cached.**
+- `scripts/era5_height_cache.py` is written and ready: it fetches the 12Z
+  step of every day in 1990-2020 from ARCO, keeps the zonal means for
+  60-90N, 60N and 0-90N on all 37 levels, and is **resumable** (a manifest
+  row per finished day) so it can run in the background.
+- **Cost: ~1.3 TB of transfer, ~5 h at the measured 75 MB/s ceiling.**
+  The ARCO pressure-level chunks hold one 6-hourly step of the whole
+  0.25 deg globe (37 x 721 x 1440, ~120 MB compressed), so one day costs one
+  chunk and the latitude band cannot be subset.
+- **There is no cheap substitute.** The coarse ARCO stores
+  (`ar/1959-2022-6h-{64x32,128x64,512x256}_equiangular_conservative.zarr`)
+  look promising but are **single-level** (13 pressure levels, 250 hPa and
+  below) - no stratosphere. Only `ar/*full_37*` has the 37 levels, and they
+  are all 0.25 deg. The 6-hourly and the hourly stores have the same
+  chunk shape, so the hourly one is no smaller.
+- **No CDS API key** is configured, so the CDS route (which has monthly
+  means and a proper pressure-level product) is not available.
+
+**To run it** (resumable - kill it and start it again and it continues):
+
+    nohup ./venv/bin/python -u scripts/era5_height_cache.py \
+        --years 1990-2020 --workers 4 > /workspace/scratch/height.log 2>&1 &
+
+then, with the cache built:
+
+    ./venv/bin/python scripts/build_height_archive.py     # the figure + the
+    ./venv/bin/python scripts/build_site.py                # the site
+
+**Also still open:** the runner had been building the site from `db15d46`
+for 40+ minutes at the time of writing, so the live site still shows the
+old combined stratosphere graphic. The two new products (the wind and the
+anomaly, as separate tabs) are in that commit and will appear when it lands.
