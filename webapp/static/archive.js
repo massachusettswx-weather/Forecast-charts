@@ -18,8 +18,9 @@
   const cache = {};
   let data = null, level = 10, domain = '60';
   let view = null;           // {i0, i1} the visible day range
-
-  const EVENTS = A.events || [];
+  // the reversal events: they travel with the payload, so the markers
+  // follow the domain the reader picked
+  let EVENTS = [];
 
   function fmtDate(d) {
     const [y, m, dd] = d.split('-').map(Number);
@@ -49,6 +50,8 @@
       })
       .then(t => { cache[dom] = JSON.parse(t); return cache[dom]; });
   }
+
+  let dateIndex = new Map();     // 'YYYY-MM-DD' -> day index
 
   function climFor(lev) {
     const c = (data.clim || {})[String(lev)];
@@ -150,12 +153,13 @@
     }
     ctx.stroke();
 
-    // the reversal events
+    // the reversal events: a marker at the start of each, and a dot at the
+    // depth it reached
     const iStart = data.dates[i0], iEnd = data.dates[i1 - 1];
     for (const e of EVENTS) {
-      if (e.start < iStart || e.start > iEnd) continue;
-      const i = data.dates.indexOf(e.start);
-      if (i < 0) continue;
+      if (!e.start || e.start < iStart || e.start > iEnd) continue;
+      const i = dateIndex.get(e.start);
+      if (i === undefined || i < i0 || i >= i1) continue;
       const x = X(i);
       ctx.strokeStyle = 'rgba(190,40,40,0.75)';
       ctx.lineWidth = 1.4;
@@ -285,6 +289,8 @@
     domain = domSel.value;
     load(domain).then(d => {
       data = d;
+      EVENTS = d.events || [];
+      dateIndex = new Map(d.dates.map((d, i) => [d, i]));
       setLevels();
       view = null;
       draw();
@@ -315,6 +321,8 @@
   // --- start
   load(domain).then(d => {
     data = d;
+    EVENTS = d.events || [];
+    dateIndex = new Map(d.dates.map((d, i) => [d, i]));
     setLevels();
     draw();
   });

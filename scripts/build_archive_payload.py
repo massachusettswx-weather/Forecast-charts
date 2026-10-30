@@ -34,6 +34,14 @@ def main():
     dates = [str(d) for d in z["dates"]]
     levels = [int(l) for l in z["levels"]]
     clim = json.load(open(CLIM))
+    # the reversal events of each domain: the browser marks them on the
+    # series, so they travel with the payload (the markers must follow the
+    # domain the reader picks)
+    arch = json.load(open(os.path.join(ROOT, "data", "ssw_archive.json")))
+    ev_by_dom = {d: [{"start": e["start"], "end": e["end"], "min": e["min"],
+                      "days": e["days"], "level": e.get("min_level")}
+                     for e in (v.get("events") or [])]
+                 for d, v in (arch.get("domains") or {}).items()}
 
     for dom in ("60", "70", "0", "cap"):
         s = z[f"u_{dom}"]
@@ -50,13 +58,15 @@ def main():
                 "mean": [round(float(x), 2) for x in (e.get("mean") or [])],
                 "sigma": [round(float(x), 2) for x in (e.get("sigma") or [])],
             }
-        payload = {"dates": dates, "levels": levels, "u": u, "clim": cl}
+        payload = {"dates": dates, "levels": levels, "u": u, "clim": cl,
+                   "events": ev_by_dom.get(dom, [])}
         raw = json.dumps(payload, separators=(",", ":")).encode()
         p = os.path.join(OUT, f"u_{dom}.json.gz")
         with gzip.open(p, "wb", compresslevel=9) as fh:
             fh.write(raw)
         print(f"  {dom}: {len(raw)/1e6:.1f} MB raw -> "
-              f"{os.path.getsize(p)/1e6:.2f} MB gzipped", flush=True)
+              f"{os.path.getsize(p)/1e6:.2f} MB gzipped "
+              f"({len(payload['events'])} events)", flush=True)
 
 
 if __name__ == "__main__":

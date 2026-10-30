@@ -240,7 +240,8 @@ def main():
                  key=lambda e: e["depth"], reverse=True)[:a.events]
     for e in evs:
         out = os.path.join(a.out_dir, f"event_{e['start']}.png")
-        _event_timeheight(z, clim, dates, e, out, domain="cap")
+        # the same domain as the catalogue, so the two agree
+        _event_timeheight(z, clim, dates, e, out, domain=a.domain)
         print("wrote", out, flush=True)
 
 
