@@ -448,3 +448,32 @@ then, with the cache built:
 for 40+ minutes at the time of writing, so the live site still shows the
 old combined stratosphere graphic. The two new products (the wind and the
 anomaly, as separate tabs) are in that commit and will appear when it lands.
+
+## 2026-10-31 05:55Z - the site is down (not published)
+
+The charts are no longer served publicly. `https://massachusettswx-weather.github.io/Forecast-charts/`
+now returns a one-line notice (`webapp/static/offline.html`), and every
+figure, the archive payloads and `latest.json` are 404 again.
+
+**How it works now:**
+- `update.yml` still builds the charts every cycle and still keeps them in
+  the repository. Before deploying, the **"The public page"** step replaces
+  `site_out` with the notice **unless** the repository variable
+  `PUBLISH_SITE` is `"true"`. So the charts are never published by
+  accident, and the takedown survives every poll.
+- `.github/workflows/unpublish.yml` is the immediate lever: it publishes the
+  notice page without the fetch and the render, in about a minute. Touch
+  that file and push to fire it.
+- The chart workflow's push trigger now lists `.github/workflows/update.yml`
+  only, so adding the takedown workflow does not queue another full run.
+
+**To bring the site back:** set the repository variable `PUBLISH_SITE=true`
+(Settings -> Secrets and variables -> Actions -> Variables). The next cycle
+publishes the charts again. Nothing has to be rebuilt or re-fetched - the
+chart pipeline never stopped.
+
+**Still public (the repository, not the site):** the source, `latest.json`
+and the committed archive PNGs are readable on raw.githubusercontent.com. That
+only goes away if the repository itself is made private (Settings ->
+General -> Danger zone -> Change visibility). The deploy key and the
+Actions workflow keep working on a private repository.
