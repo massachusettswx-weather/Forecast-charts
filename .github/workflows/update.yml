@@ -15,7 +15,10 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/**"
+      # only this workflow's own file: the takedown workflow
+      # (.github/workflows/unpublish.yml) has its own trigger, and adding it
+      # should not queue another full chart run
+      - ".github/workflows/update.yml"
       - "scripts/**"
       - "webapp/**"
       - "Makefile"

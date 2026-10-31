@@ -1,0 +1,52 @@
+name: take-the-site-down
+
+# An immediate takedown.
+#
+# The chart pipeline (update.yml) publishes the charts to GitHub Pages at the
+# end of a run that starts with a long fetch. When the site has to come down
+# NOW, this workflow publishes the notice page instead - no fetch, no render,
+# about a minute from the push.
+#
+# It is also the lever to bring the site back: the charts themselves are
+# published by update.yml, which only deploys them when the repository
+# variable PUBLISH_SITE is "true".
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/unpublish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-publish
+  cancel-in-progress: false
+
+jobs:
+  unpublish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The notice page
+        run: |
+          rm -rf site_out
+          mkdir -p site_out
+          cp webapp/static/offline.html site_out/index.html
+          ls -l site_out
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site_out
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
