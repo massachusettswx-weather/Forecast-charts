@@ -131,6 +131,21 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      # The charts are NOT published by default. The public URL gets a
+      # one-line notice instead of the charts, so nothing is publicly
+      # viewable. To publish the charts again, set the repository variable
+      # PUBLISH_SITE = true (Settings -> Secrets and variables -> Actions ->
+      # Variables) - or ask the bot to flip it.
+      - name: The public page
+        env:
+          PUBLISH: ${{ vars.PUBLISH_SITE }}
+        run: |
+          if [ "$PUBLISH" != "true" ]; then
+            rm -rf site_out
+            mkdir -p site_out
+            cp webapp/static/offline.html site_out/index.html
+          fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
