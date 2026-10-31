@@ -132,7 +132,7 @@ jobs:
           git push || echo "push failed (permissions?) - Pages artifact below"
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       # The charts are NOT published by default. The public URL gets a
       # one-line notice instead of the charts, so nothing is publicly
