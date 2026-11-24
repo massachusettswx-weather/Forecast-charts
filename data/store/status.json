@@ -5,5 +5,32 @@
     "gfs": "2026112318",
     "gefs": "2026112318"
   },
-  "rendered": "2026112318"
+  "rendered": "2026112318",
+  "rendered_models": {
+    "2026112318": []
+  },
+  "rendered_sig": {
+    "2026112318": [
+      [
+        3,
+        5,
+        [
+          "60",
+          "70",
+          "0",
+          "cap"
+        ],
+        [
+          "physics",
+          "ai",
+          "hybrid",
+          "ensembles",
+          "ssw"
+        ]
+      ],
+      []
+    ]
+  },
+  "rendered_cycle": "2026112318",
+  "partial": false
 }
