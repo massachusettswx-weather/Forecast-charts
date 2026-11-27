@@ -3,7 +3,7 @@
   "level": 10,
   "lat": "60",
   "cycle_label": "18z 26 Nov 2026",
-  "updated": "2026-11-27T00:22:41.079577+00:00",
+  "updated": "2026-11-27T03:58:20.696944+00:00",
   "figures": {
     "physics_2026112618_u1_60.png": "/fig/physics_2026112618_u1_60.png",
     "hybrid_2026112618_u1_60.png": "/fig/hybrid_2026112618_u1_60.png",
@@ -100,6 +100,7 @@
       "aifs-single",
       "gefs",
       "gefs_ctl",
+      "gefs_members",
       "gfs"
     ]
   },
